@@ -171,7 +171,7 @@ void    NaoDeclarado(char *);
 
 /* Producoes da gramatica */
 
-Prog         : { InicTabSimb(); } GlobDecls FuncList MainDef
+Prog         : { InicTabSimb(); InicListSimb(); } GlobDecls FuncList MainDef
              ;
 GlobDecls    : ;
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
@@ -201,9 +201,9 @@ DimList      : INTCT               { printf("%d", $1);}
 FuncList     : ;
              | FuncList FuncDef
              ;
-FuncDef      : FUNCTION ID COLON { printIncreasingTabs("function %s : ", $2); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); }
+FuncDef      : { AnulaListSimb(); } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
-MainDef      : MAIN { printIncreasingTabs("main \n"); } LocDecls Statmts { printDecreasingTabs("\n"); }
+MainDef      : { AnulaListSimb(); } MAIN { printIncreasingTabs("main \n"); } LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
 Params       : ;
              | PARAMETERS OPBRACE { printIncreasingTabs("parameters {\n"); } ParamList CLBRACE { printDecreasingTabs("}\n"); }
@@ -324,8 +324,12 @@ SubscrList   : AuxExpr4
 
 /* Semantic Analisys */
 void declareVariable(char *variable){
-  if( ProcuraSimb(variable) != NULL ) DeclaracaoRepetida(variable);
-  else simb = InsereSimb(variable, IDVAR);
+  if( ProcuraListSimb(variable) != NULL ){
+    DeclaracaoRepetida(variable);
+  }else{
+    simb = InsereSimb(variable, IDVAR);
+    InsereListSimb(simb);    
+  }
 }
 
 /* Pretty-printer */
@@ -424,7 +428,7 @@ void AnulaListSimb(void) {
   while(listsimb!=NULL) {
     p=listsimb;
     listsimb = listsimb->prox;
-    free (p);
+    free(p);
   }
 }
 
@@ -494,17 +498,17 @@ void ImprimeTabSimb() {
   }
 }
 
-/*  Testes semanticos  */
+/*  Erros semanticos  */
 void DeclaracaoRepetida(char *s){
   addError("/* Declaracao Repetida: %s */\n", s);
 }
 
 void NaoDeclarado(char *s){
-  printf("\n\n***** Identificador Nao Declarado: %s *****\n\n", s);
+  addError("/* Identificador Nao Declarado: %s */\n", s);
 }
 
 void TipoInadequado(char *s){
-  printf("\n\n***** Identificador de Tipo Inadequado: %s *****\n\n", s);
+  addError("/* Identificador de Tipo Inadequado: %s */\n", s);
 }
 
 /* FALTA VerificaInicRef (slides III, pag 73) */
