@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 int hasErrors = 0;
-char errorMessage[100];
 
-void addError(char *msg){
-  strcpy(errorMessage, msg);
-  hasErrors = 1;
+void addError(char *buff, ...){
+  va_list arglist;
+  va_start(arglist, buff);
+  vfprintf(stderr, buff, arglist);
+  hasErrors = 1;       
+  va_end(arglist);
 }
 
 int main(){
