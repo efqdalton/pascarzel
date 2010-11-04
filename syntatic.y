@@ -37,6 +37,9 @@
 #define   VERDADE     1
 #define   FALSO       0
 
+/* Protótipos para analisador semantico */
+void declareVariable(char *);
+
 /* Protótipos e variaveis para pretty-printer */
 int identation_deep = 0;
 void increaseTabSize();
@@ -168,7 +171,7 @@ void    NaoDeclarado(char *);
 
 /* Producoes da gramatica */
 
-Prog         : GlobDecls FuncList MainDef
+Prog         : { InicTabSimb(); } GlobDecls FuncList MainDef
              ;
 GlobDecls    : ;
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
@@ -178,8 +181,8 @@ DeclList     : Declaration
              ;  
 Declaration  : { printTabs(); } IdList { printf(" : "); } COLON Type SCOLON { printf(";\n"); }
              ;
-IdList       : ID              { printf("%s", $1); }
-             | IdList COMMA ID { printf(", %s", $3); }
+IdList       : ID              { declareVariable($1); printf("%s", $1); }
+             | IdList COMMA ID { declareVariable($3); printf(", %s", $3); }
              ;
 Type         : ScalarType
              | ArrayType
@@ -318,6 +321,12 @@ SubscrList   : AuxExpr4
 
 /* Inclusao do analisador lexico */
 #include "lex.yy.c"
+
+/* Semantic Analisys */
+void declareVariable(char *variable){
+  if( ProcuraSimb(variable) != NULL ) DeclaracaoRepetida(variable);
+  else simb = InsereSimb(variable, IDVAR);
+}
 
 /* Pretty-printer */
 void increaseTabSize(){
@@ -487,7 +496,7 @@ void ImprimeTabSimb() {
 
 /*  Testes semanticos  */
 void DeclaracaoRepetida(char *s){
-  printf("\n\n***** Declaracao Repetida: %s *****\n\n", s);
+  addError("/* Declaracao Repetida: %s */\n", s);
 }
 
 void NaoDeclarado(char *s){
