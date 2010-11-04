@@ -88,6 +88,7 @@ void    InicTabSimb(void);
 void    InicListSimb(void);
 void    InsereListSimb(simbolo);
 void    AnulaListSimb(void);
+simbolo ProcuraListSimb(char *);
 void    AdicTipoVar(void);
 
 void    ImprimeTabSimb(void);
@@ -324,8 +325,9 @@ SubscrList   : AuxExpr4
 
 /* Semantic Analisys */
 void declareVariable(char *variable){
-  if( ProcuraListSimb(variable) != NULL ){
-    DeclaracaoRepetida(variable);
+  simbolo s;
+  if( (s = ProcuraListSimb(variable)) != NULL ){
+    DeclaracaoRepetida(variable);    
   }else{
     simb = InsereSimb(variable, IDVAR);
     InsereListSimb(simb);    
@@ -430,6 +432,17 @@ void AnulaListSimb(void) {
     listsimb = listsimb->prox;
     free(p);
   }
+}
+
+simbolo ProcuraListSimb(char *cadeia){
+  elemlistsimb *p;
+  p = listsimb;
+
+  while(p!=NULL) {
+    if( strcmp( p->simb->cadeia, cadeia) == 0 ) return p->simb;
+    p = p->prox;
+  }
+  return NULL;
 }
 
 /* AdicTipoVar: Coloca o tipo de variavel corrente em todos os simbolos da lista de simbolos */

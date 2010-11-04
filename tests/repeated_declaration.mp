@@ -1,9 +1,8 @@
-global {
-  vetor : array [2] of int;
-  a : array [2] of int;
-}
-
 function sayHello : void
+  local{
+    repeated : int;
+    repeated : array [2] of int;
+  }
   statements {
     write("Hello World!");
     return ;
