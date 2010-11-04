@@ -90,7 +90,7 @@ comma       ,
 colon       :
 assign      :=
 
-comment     "/*"(.|{delim})*"*/"
+comment     "/*"([^*]|"*"[^/])*("*/")?
 
 letra       [A-Za-z]
 digito      [0-9]
