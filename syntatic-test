@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+flex lexical.l
+yacc --report state syntatic.y
+gcc  y.tab.c yyerror.c main.c -lfl
+
+set +e
+
+for teste in tests/*.mp; do
+    echo "$teste"
+    ./a.out < $teste > output/$(basename $teste .mp).out
+    ./a.out < output/$(basename $teste .mp).out > output/$(basename $teste .mp).out.out
+done
+

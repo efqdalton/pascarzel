@@ -97,6 +97,9 @@ void    NaoDeclarado(char *);
 
 %}
 
+/* Ativa erros com mais detalhes do yacc */
+%error-verbose
+
 /* Definicao do tipo de yylval */
 %union {
   char    cadeia[100];
