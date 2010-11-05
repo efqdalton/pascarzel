@@ -37,9 +37,6 @@
 #define   VERDADE     1
 #define   FALSO       0
 
-/* Protótipos para analisador semantico */
-void declareVariable(char *);
-
 /* Protótipos e variaveis para pretty-printer */
 int identation_deep = 0;
 void increaseTabSize();
@@ -95,7 +92,16 @@ void    ImprimeTabSimb(void);
 simbolo InsereSimb(char *, int);
 int     hash(char *);
 simbolo ProcuraSimb(char *);
+
+/* Protótipos para analisador semantico */
+void declareVariable(char *);
+void validateVectorSize(int);
+void validateVariableType();
+
+/* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
+void    TamanhoInvalidoDeVetor(int);
+void    VariavelDeTipoVoid();
 void    TipoInadequado(char *);
 void    NaoDeclarado(char *);
 
@@ -180,7 +186,7 @@ GlobDecls    : ;
 DeclList     : Declaration
              | DeclList Declaration
              ;  
-Declaration  : { printTabs(); } IdList { printf(" : "); } COLON Type SCOLON { printf(";\n"); }
+Declaration  : { printTabs(); } IdList { printf(" : "); } COLON Type SCOLON { printf(";\n"); AdicTipoVar(); }
              ;
 IdList       : ID              { declareVariable($1); printf("%s", $1); }
              | IdList COMMA ID { declareVariable($3); printf(", %s", $3); }
@@ -188,16 +194,16 @@ IdList       : ID              { declareVariable($1); printf("%s", $1); }
 Type         : ScalarType
              | ArrayType
              ;
-ScalarType   : INT   { printf("int");   }
-             | FLOAT { printf("float"); }
-             | CHAR  { printf("char");  }
-             | LOGIC { printf("logic"); }
-             | VOID  { printf("void");  }
+ScalarType   : INT   { printf("int");   tipocorrente = INTEIRO;   }
+             | FLOAT { printf("float"); tipocorrente = REAL;      }
+             | CHAR  { printf("char");  tipocorrente = CARACTERE; }
+             | LOGIC { printf("logic"); tipocorrente = LOGICO;    }
+             | VOID  { printf("void");  tipocorrente = NAOVAR;    }
              ;
 ArrayType    : ARRAY OPBRAK { printf("array ["); } DimList CLBRAK OF { printf("] of "); } ScalarType
              ;
-DimList      : INTCT               { printf("%d", $1);}
-             | DimList COMMA INTCT { printf(", %d", $3);}
+DimList      : INTCT               { printf("%d", $1); validateVectorSize($1); }
+             | DimList COMMA INTCT { printf(", %d", $3); validateVectorSize($3); }
              ;
 FuncList     : ;
              | FuncList FuncDef
@@ -334,6 +340,14 @@ void declareVariable(char *variable){
   }
 }
 
+void validateVectorSize(int n){
+  if(n <= 0) TamanhoInvalidoDeVetor(n);
+}
+
+void validateVariableType(){
+  if(tipocorrente == NAOVAR) VariavelDeTipoVoid();
+}
+
 /* Pretty-printer */
 void increaseTabSize(){
   identation_deep++;  
@@ -448,6 +462,7 @@ simbolo ProcuraListSimb(char *cadeia){
 /* AdicTipoVar: Coloca o tipo de variavel corrente em todos os simbolos da lista de simbolos */
 void AdicTipoVar() {
   elemlistsimb *p;
+  validateVariableType();
   for(p=listsimb; p!=NULL; p = p->prox) p->simb->tvar = tipocorrente;
 }
 
@@ -514,6 +529,14 @@ void ImprimeTabSimb() {
 /*  Erros semanticos  */
 void DeclaracaoRepetida(char *s){
   addError("/* Declaracao Repetida: %s */\n", s);
+}
+
+void TamanhoInvalidoDeVetor(int n){
+  addError("/* Tamanho Invalido De Vetor: %d */\n", n);
+}
+
+void VariavelDeTipoVoid(){
+  addError("/* Variável de tipo void: %s */\n");
 }
 
 void NaoDeclarado(char *s){
