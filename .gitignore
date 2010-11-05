@@ -3,3 +3,11 @@
 
 # /out/
 /out/*
+
+# /output/
+/output/*
+
+y.output
+y.tab.c
+a.out
+lex.yy.c
