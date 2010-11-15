@@ -2,15 +2,13 @@
 
 set -e
 
-flex lexical.l
-yacc --report state syntatic.y
-gcc  y.tab.c yyerror.c main.c -lfl
+make
 
 set +e
 
 for teste in tests/*.mp; do
     echo "$teste"
-    ./a.out < $teste > output/$(basename $teste .mp).mp
-    ./a.out < output/$(basename $teste .mp).mp > output/$(basename $teste .mp).mp.mp
+    ./syntatic < $teste > output/$(basename $teste .mp).mp
+    ./syntatic < output/$(basename $teste .mp).mp > output/$(basename $teste .mp).mp.mp
 done
 
