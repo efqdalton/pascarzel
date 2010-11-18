@@ -26,6 +26,8 @@
 
 /* Definicao dos tipos de identificadores */
 #define   IDVAR      1
+#define   IDGLOB     1
+#define   IDFUNC     1
 
 /* Definicao dos tipos de variaveis */
 #define   NAOVAR     0
@@ -38,9 +40,14 @@
 #define   NCLASSHASH  23
 #define   VERDADE     1
 #define   FALSO       0
+#define   MAXDIMS     2
 
 /* Protótipos e variaveis para pretty-printer */
 int identation_deep = 0;
+void InicProg();
+void InicFunc(char *id);
+void InicFuncParamDecl();
+void FimFuncParamDecl();
 void increaseTabSize();
 void decreaseTabSize();
 void printTabs();
@@ -59,16 +66,18 @@ char *nometipvar[5] = { "NAOVAR", "INTEIRO", "LOGICO", "REAL", "CARACTERE" };
 /* Declaracoes para a tabela de simbolos */
 typedef struct celsimb celsimb;
 typedef celsimb *simbolo;
+typedef struct elemlistsimb elemlistsimb;
+typedef elemlistsimb *listasimbolo;
+
 struct celsimb {
   char *cadeia;
-  int  tid, tvar;
-  char inic, ref;
-  simbolo prox;
+  int  tid, tvar, tparam, ndims, dims[MAXDIMS+1];
+  char inic, ref, array, param;
+  listasimbolo listvar, listparam, listfunc;
+  simbolo escopo, prox;
 };
 
 /* Declarações para lista linear de simbolos */
-typedef struct elemlistsimb elemlistsimb;
-typedef elemlistsimb *listasimbolo;
 struct elemlistsimb {
   simbolo simb;
   elemlistsimb *prox;
@@ -77,23 +86,28 @@ struct elemlistsimb {
 /* Variaveis globais para a tabela de simbolos e analise semantica */
 simbolo tabsimb[NCLASSHASH];
 simbolo simb;
-listasimbolo listsimb;
+//listasimbolo listsimb;
 int tipocorrente;
+short declparam;
+simbolo escopo;
+listasimbolo pontvardecl;
+listasimbolo pontfunc;
+listasimbolo pontparam;
 
 /* Prototipos das funcoes para a tabela de simbolos e analise semantica */
 
 void    InicTabSimb(void);
 
-void    InicListSimb(void);
-void    InsereListSimb(simbolo);
-void    AnulaListSimb(void);
-simbolo ProcuraListSimb(char *);
-void    AdicTipoVar(void);
+void    InicListSimb(listasimbolo*);
+void    InsereListSimb(simbolo, listasimbolo*);
+void    AnulaListSimb(listasimbolo*);
+//simbolo ProcuraListSimb(char *);
+void    AdicTipoVar(listasimbolo);
 
 void    ImprimeTabSimb(void);
-simbolo InsereSimb(char *, int);
+simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo);
 int     hash(char *);
-simbolo ProcuraSimb(char *);
+simbolo ProcuraSimb(char *, simbolo);
 
 /* Protótipos para analisador semantico */
 void declareVariable(char *);
@@ -144,7 +158,7 @@ void    NaoDeclarado(char *);
 %token    SCOLON
 %token    COMMA
 %token    COLON
-%token    ASSIGN 
+%token    ASSIGN
 %token    ARRAY
 %token    CALL
 %token    CHAR
@@ -180,9 +194,9 @@ void    NaoDeclarado(char *);
 
 /* Producoes da gramatica */
 
-Prog         : { InicTabSimb(); InicListSimb(); } GlobDecls FuncList MainDef
+Prog         : { InicTabSimb(); InicProg(); } GlobDecls FuncList MainDef { ImprimeTabSimb(); }
              ;
-GlobDecls    : ;
+GlobDecls    : 
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
              ;
 DeclList     : Declaration
@@ -207,22 +221,22 @@ ArrayType    : ARRAY OPBRAK { printf("array ["); } DimList CLBRAK OF { printf("]
 DimList      : INTCT               { printf("%d", $1); validateVectorSize($1); }
              | DimList COMMA INTCT { printf(", %d", $3); validateVectorSize($3); }
              ;
-FuncList     : ;
+FuncList     : 
              | FuncList FuncDef
              ;
-FuncDef      : { AnulaListSimb(); } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); }
+FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); InicFunc($3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
-MainDef      : { AnulaListSimb(); } MAIN { printIncreasingTabs("main \n"); } LocDecls Statmts { printDecreasingTabs("\n"); }
+MainDef      : { /* AnulaListSimb(); */ } MAIN { printIncreasingTabs("main \n"); } LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
-Params       : ;
-             | PARAMETERS OPBRACE { printIncreasingTabs("parameters {\n"); } ParamList CLBRACE { printDecreasingTabs("}\n"); }
+Params       : 
+             | PARAMETERS OPBRACE { InicFuncParamDecl(); printIncreasingTabs("parameters {\n"); } ParamList CLBRACE { FimFuncParamDecl(); printDecreasingTabs("}\n"); }
              ;
 ParamList    : ParamDecl
              | ParamList ParamDecl
              ;
 ParamDecl    : { printTabs(); } IdList COLON { printf(" : "); } ScalarType SCOLON { printf(";\n"); }
              ;
-LocDecls     : ;
+LocDecls     : 
              | LOCAL OPBRACE { printIncreasingTabs("local {\n"); } DeclList CLBRACE { printDecreasingTabs("}\n"); }
              ;
 Statmts      : STATEMENTS OPBRACE { printIncreasingTabs("statements {\n"); } StatList CLBRACE { printDecreasingTabs("}\n"); }
@@ -332,13 +346,44 @@ SubscrList   : AuxExpr4
 #include "lex.yy.c"
 
 /* Semantic Analisys */
+
+// Initialize global variables on program initialization
+void InicProg()
+{
+  declparam = 0;
+  escopo = simb = InsereSimb("##global", IDGLOB, NAOVAR, NULL);
+  pontvardecl = simb->listvar;
+  pontfunc = simb->listfunc;
+}
+
+// Initialize a funcion
+void InicFunc(char *id)
+{
+  escopo = simb = InsereSimb(id, IDFUNC, tipocorrente, escopo);
+  pontvardecl = simb -> listvar;
+  pontparam = simb -> listparam;
+}
+
+// Start declaring function parameters
+void InicFuncParamDecl()
+{
+  declparam = 1;
+}
+
+// End declaring function parameters
+void FimFuncParamDecl()
+{
+  declparam = 0;
+}
+
 void declareVariable(char *variable){
   simbolo s;
-  if( (s = ProcuraListSimb(variable)) != NULL ){
-    DeclaracaoRepetida(variable);    
-  }else{
-    simb = InsereSimb(variable, IDVAR);
-    InsereListSimb(simb);    
+  s = ProcuraSimb(variable, escopo);
+  if (s != NULL && s->escopo == escopo) {
+    DeclaracaoRepetida(variable);
+  } else {
+    simb = InsereSimb(variable, IDVAR, NAOVAR, escopo);
+    //InsereListSimb(simb);
   }
 }
 
@@ -425,44 +470,44 @@ void InicTabSimb(){
 }
 
 /* InicListSimb: Inicializa a lista linear global de simbolos */
-void InicListSimb(){
-  listsimb = NULL;
+void InicListSimb(listasimbolo *listsimb){
+  *listsimb = NULL;
 }
 
 /* InsereListSimb: Insere um simbolo na lista linear global de simbolos
    simb: simbolo a ser inserido */
-void InsereListSimb(simbolo simb){
+void InsereListSimb(simbolo simb, listasimbolo *listsimb){
   elemlistsimb *p;
-  p = listsimb;
-  listsimb = malloc(sizeof(elemlistsimb));
-  listsimb->simb = simb;
-  listsimb->prox = p;
+  p = *listsimb;
+  *listsimb = malloc(sizeof(elemlistsimb));
+  (*listsimb)->simb = simb;
+  (*listsimb)->prox = p;
 }
 
 /*  AnulaListSimb: Anula a corrente lista linear de simbolos  */
-void AnulaListSimb(void) {
+void AnulaListSimb(listasimbolo *listsimb) {
   elemlistsimb *p;
 
-  while(listsimb!=NULL) {
-    p=listsimb;
-    listsimb = listsimb->prox;
+  while(*listsimb != NULL) {
+    p = *listsimb;
+    *listsimb = (*listsimb)->prox;
     free(p);
   }
 }
 
-simbolo ProcuraListSimb(char *cadeia){
-  elemlistsimb *p;
-  p = listsimb;
-
-  while(p!=NULL) {
-    if( strcmp( p->simb->cadeia, cadeia) == 0 ) return p->simb;
-    p = p->prox;
-  }
-  return NULL;
-}
+//simbolo ProcuraListSimb(char *cadeia){
+//  elemlistsimb *p;
+//  p = listsimb;
+//
+//  while(p!=NULL) {
+//    if( strcmp( p->simb->cadeia, cadeia) == 0 ) return p->simb;
+//    p = p->prox;
+//  }
+//  return NULL;
+//}
 
 /* AdicTipoVar: Coloca o tipo de variavel corrente em todos os simbolos da lista de simbolos */
-void AdicTipoVar() {
+void AdicTipoVar(listasimbolo listsimb) {
   elemlistsimb *p;
   validateVariableType();
   for(p=listsimb; p!=NULL; p = p->prox) p->simb->tvar = tipocorrente;
@@ -473,11 +518,21 @@ void AdicTipoVar() {
   Caso ela ali esteja, retorna um ponteiro para sua celula;
   Caso contrario, retorna NULL.
 */
-simbolo ProcuraSimb (char *cadeia) {
+simbolo ProcuraSimb (char *cadeia, simbolo escopo) {
   simbolo s; int i;
   i = hash (cadeia);
-  for(s = tabsimb[i]; (s!=NULL) && strcmp(cadeia, s->cadeia); s = s->prox);
-  return s;
+  while (escopo != NULL) {
+    for(s = tabsimb[i]; s!=NULL; s = s->prox)
+    {
+      if (
+          s->escopo == escopo &&
+          strcmp(cadeia, s->cadeia)
+         )
+        return s;
+    }
+    escopo = escopo->escopo;
+  }
+  return NULL;
 }
 
 /*
@@ -485,18 +540,55 @@ simbolo ProcuraSimb (char *cadeia) {
   simbolos, com tid como tipo de identificador; Retorna um
   ponteiro para a celula inserida
 */
-simbolo InsereSimb(char *cadeia, int tid) {
-  int i; simbolo aux, s;
+simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo) {
+  int i;
+  simbolo aux, s;
+
   i = hash(cadeia);
   aux = tabsimb[i];
   s = tabsimb[i] = malloc(sizeof (celsimb));
   s->cadeia = malloc((strlen(cadeia)+1)*sizeof(char));
   strcpy(s->cadeia, cadeia);
   s->tid = tid;
-  s->tvar = NAOVAR;
-  s->inic = FALSO; 
-  s->ref = FALSO;
+  s->tvar = tvar;
+  s->escopo = escopo;
   s->prox = aux;
+
+  if (declparam) {
+    // Todo parametro eh considerado referenciado e inicializado
+    s->inic = s->ref = s->param = VERDADE;
+    if (s->tid == IDVAR) {
+      // Insere o parametro na lista de parametros do seu escopo
+      InsereListSimb (s, &pontparam);
+    }
+    s->escopo->nparam++;
+  }
+  else {
+    s->inic = s->ref = s->param = FALSO;
+    if (s->tid == IDVAR)
+      // Insere o parametro na lista de variaveis globais ou locais a uma funcao
+      InsereListSimb (s, &pontvardecl);
+  }
+
+  if (tid == IDGLOB || tid == IDFUNC) {
+    // Insere noh lider
+    s->listvardecl = (elemlistsimb*) malloc(sizeof(elemlistsimb));
+    s->listvardecl->prox = NULL;
+  }
+
+  if (tid == IDGLOB) {
+    s->listfunc = (elemlistsimb*) malloc(sizeof(elemlistsimb));
+    s->listfunc->prox = NULL;
+  }
+
+  if (tid == IDFUNC) {
+    // Insere noh lider na lista de parametros
+    s->listparam = (elemlistsimb*) malloc(sizeof(elemlistsimb));
+    s->listparam->prox = NULL;
+    s->nparam = 0;
+    InsereListSimb(s, &pontfunc);
+  }
+
   return s;
 }
 
