@@ -549,7 +549,7 @@ simbolo ProcuraSimb (char *cadeia, simbolo escopo) {
     {
       if (
           s->escopo == escopo &&
-          strcmp(cadeia, s->cadeia)
+          strcmp(cadeia, s->cadeia) == 0
          )
         return s;
     }
