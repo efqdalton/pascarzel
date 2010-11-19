@@ -26,8 +26,8 @@
 
 /* Definicao dos tipos de identificadores */
 #define   IDVAR      1
-#define   IDGLOB     1
-#define   IDFUNC     1
+#define   IDGLOB     2
+#define   IDFUNC     3
 
 /* Definicao dos tipos de variaveis */
 #define   NAOVAR     0
@@ -46,8 +46,11 @@
 int identation_deep = 0;
 void InicProg();
 void InicFunc(char *id);
+void FimFunc();
 void InicFuncParamDecl();
 void FimFuncParamDecl();
+void InicDeclaration();
+void FimDeclaration();
 void increaseTabSize();
 void decreaseTabSize();
 void printTabs();
@@ -58,7 +61,7 @@ void printReadableChar(char);
 char *translateOperator(int);
 
 /* Strings para nomes dos tipos de identificadores */
-char *nometipid[2] = {" ", "IDVAR"};
+char *nometipid[] = {" ", "IDVAR", "IDGLOB", "IDFUNC"};
 
 /* Strings para nomes dos tipos de variaveis */
 char *nometipvar[5] = { "NAOVAR", "INTEIRO", "LOGICO", "REAL", "CARACTERE" };
@@ -71,7 +74,7 @@ typedef elemlistsimb *listasimbolo;
 
 struct celsimb {
   char *cadeia;
-  int  tid, tvar, tparam, ndims, dims[MAXDIMS+1];
+  int  tid, tvar, tparam, ndims, dims[MAXDIMS+1], nparam;
   char inic, ref, array, param;
   listasimbolo listvar, listparam, listfunc;
   simbolo escopo, prox;
@@ -86,7 +89,7 @@ struct elemlistsimb {
 /* Variaveis globais para a tabela de simbolos e analise semantica */
 simbolo tabsimb[NCLASSHASH];
 simbolo simb;
-//listasimbolo listsimb;
+listasimbolo listsimb;
 int tipocorrente;
 short declparam;
 simbolo escopo;
@@ -110,9 +113,9 @@ int     hash(char *);
 simbolo ProcuraSimb(char *, simbolo);
 
 /* Protótipos para analisador semantico */
-void declareVariable(char *);
-void validateVectorSize(int);
-void validateVariableType();
+void    declareVariable(char *);
+void    validateVectorSize(int);
+void    validateVariableType();
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -196,13 +199,13 @@ void    NaoDeclarado(char *);
 
 Prog         : { InicTabSimb(); InicProg(); } GlobDecls FuncList MainDef { ImprimeTabSimb(); }
              ;
-GlobDecls    : 
+GlobDecls    :
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
              ;
 DeclList     : Declaration
              | DeclList Declaration
-             ;  
-Declaration  : { printTabs(); } IdList { printf(" : "); } COLON Type SCOLON { printf(";\n"); AdicTipoVar(); }
+             ;
+Declaration  : { printTabs(); InicDeclaration(); } IdList { printf(" : "); } COLON Type SCOLON { printf(";\n"); FimDeclaration(); }
              ;
 IdList       : ID              { declareVariable($1); printf("%s", $1); }
              | IdList COMMA ID { declareVariable($3); printf(", %s", $3); }
@@ -221,14 +224,14 @@ ArrayType    : ARRAY OPBRAK { printf("array ["); } DimList CLBRAK OF { printf("]
 DimList      : INTCT               { printf("%d", $1); validateVectorSize($1); }
              | DimList COMMA INTCT { printf(", %d", $3); validateVectorSize($3); }
              ;
-FuncList     : 
+FuncList     :
              | FuncList FuncDef
              ;
-FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); InicFunc($3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); }
+FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); InicFunc($3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); FimFunc(); }
              ;
-MainDef      : { /* AnulaListSimb(); */ } MAIN { printIncreasingTabs("main \n"); } LocDecls Statmts { printDecreasingTabs("\n"); }
+MainDef      : { /* AnulaListSimb(); */ } MAIN { printIncreasingTabs("main \n"); InicFunc("##main"); } LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
-Params       : 
+Params       :
              | PARAMETERS OPBRACE { InicFuncParamDecl(); printIncreasingTabs("parameters {\n"); } ParamList CLBRACE { FimFuncParamDecl(); printDecreasingTabs("}\n"); }
              ;
 ParamList    : ParamDecl
@@ -364,16 +367,36 @@ void InicFunc(char *id)
   pontparam = simb -> listparam;
 }
 
+void FimFunc()
+{
+  escopo = simb = escopo->escopo;
+  AnulaListSimb(&pontvardecl);
+  AnulaListSimb(&pontparam);
+}
+
 // Start declaring function parameters
 void InicFuncParamDecl()
 {
   declparam = 1;
+  InicDeclaration();
 }
 
 // End declaring function parameters
 void FimFuncParamDecl()
 {
+  FimDeclaration();
   declparam = 0;
+}
+
+void InicDeclaration()
+{
+  InicListSimb(&listsimb);
+}
+
+void FimDeclaration()
+{
+  AdicTipoVar(listsimb);
+  AnulaListSimb(&listsimb);
 }
 
 void declareVariable(char *variable){
@@ -383,7 +406,7 @@ void declareVariable(char *variable){
     DeclaracaoRepetida(variable);
   } else {
     simb = InsereSimb(variable, IDVAR, NAOVAR, escopo);
-    //InsereListSimb(simb);
+    InsereListSimb(simb, &listsimb);
   }
 }
 
@@ -572,8 +595,8 @@ simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo) {
 
   if (tid == IDGLOB || tid == IDFUNC) {
     // Insere noh lider
-    s->listvardecl = (elemlistsimb*) malloc(sizeof(elemlistsimb));
-    s->listvardecl->prox = NULL;
+    s->listvar = (elemlistsimb*) malloc(sizeof(elemlistsimb));
+    s->listvar->prox = NULL;
   }
 
   if (tid == IDGLOB) {
@@ -614,6 +637,8 @@ void ImprimeTabSimb() {
         printf("  (%s, %s", s->cadeia,  nometipid[s->tid]);
         if(s->tid == IDVAR)
           printf(", %s, %d, %d", nometipvar[s->tvar], s->inic, s->ref);
+        if (s->escopo)
+          printf(", %s", s->escopo->cadeia);
         printf(")\n");
       }
     }
