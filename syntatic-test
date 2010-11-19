@@ -10,7 +10,7 @@ set +e
 
 for teste in tests/*.mp; do
     echo "$teste"
-    ./a.out < $teste > output/$(basename $teste .mp).mp
-    ./a.out < output/$(basename $teste .mp).mp > output/$(basename $teste .mp).mp.mp
+    ./a.out < $teste > output/$(basename $teste .mp).mp 2>&1
+#    ./a.out < output/$(basename $teste .mp).mp > output/$(basename $teste .mp).mp.mp
 done
 
