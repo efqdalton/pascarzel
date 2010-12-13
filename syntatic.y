@@ -45,6 +45,7 @@
 /* Protótipos e variaveis para pretty-printer */
 int identation_deep = 0;
 void InicProg();
+void FimProg();
 void InicFunc(char *id);
 void FimFunc();
 void InicFuncParamDecl();
@@ -116,6 +117,7 @@ simbolo ProcuraSimb(char *, simbolo);
 void    declareVariable(char *);
 void    validateVectorSize(int);
 void    validateVariableType();
+void    VerificaInicRef();
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -123,6 +125,7 @@ void    TamanhoInvalidoDeVetor(int);
 void    VariavelDeTipoVoid();
 void    TipoInadequado(char *);
 void    NaoDeclarado(char *);
+void    VariavelNaoReferenciada(simbolo s);
 
 %}
 
@@ -197,7 +200,7 @@ void    NaoDeclarado(char *);
 
 /* Producoes da gramatica */
 
-Prog         : { InicTabSimb(); InicProg(); } GlobDecls FuncList MainDef { ImprimeTabSimb(); }
+Prog         : { InicTabSimb(); InicProg(); } GlobDecls FuncList MainDef { FimProg(); ImprimeTabSimb(); }
              ;
 GlobDecls    :
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
@@ -357,6 +360,12 @@ void InicProg()
   escopo = simb = InsereSimb("##global", IDGLOB, NAOVAR, NULL);
   pontvardecl = simb->listvar;
   pontfunc = simb->listfunc;
+}
+
+/* To be called after end of program */
+void FimProg()
+{
+  VerificaInicRef();
 }
 
 // Initialize a funcion
@@ -626,6 +635,23 @@ int hash(char *cadeia) {
   return h;
 }
 
+/* Verifica se todas as variaveis foram referenciadas */
+void VerificaInicRef()
+{
+  int i;
+  simbolo s;
+
+  for(i = 0; i < NCLASSHASH; i++){
+    if(tabsimb[i]) {
+      for(s = tabsimb[i]; s!=NULL; s = s->prox){
+        if (s->ref == FALSO) {
+          VariavelNaoReferenciada(s);
+        }
+      }
+    }
+  }
+}
+
 /* ImprimeTabSimb: Imprime todo o conteudo da tabela de simbolos  */
 void ImprimeTabSimb() {
   int i; simbolo s;
@@ -666,4 +692,6 @@ void TipoInadequado(char *s){
   addError("/* Identificador de Tipo Inadequado: %s */\n", s);
 }
 
-/* FALTA VerificaInicRef (slides III, pag 73) */
+void VariavelNaoReferenciada(simbolo s) {
+  addError("/* Variavel nao referenciada: %s */\n", s->cadeia);
+}
