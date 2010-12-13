@@ -655,7 +655,7 @@ void TamanhoInvalidoDeVetor(int n){
 }
 
 void VariavelDeTipoVoid(){
-  addError("/* Variável de tipo void: %s */\n");
+  addError("/* Variável de tipo void */\n");
 }
 
 void NaoDeclarado(char *s){
