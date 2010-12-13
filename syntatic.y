@@ -107,7 +107,6 @@ void    InsereListSimb(simbolo, listasimbolo*);
 void    AnulaListSimb(listasimbolo*);
 //simbolo ProcuraListSimb(char *);
 void    AdicTipoVar(listasimbolo);
-simbolo UsarVariavel(char *name);
 
 void    ImprimeTabSimb(void);
 simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo);
@@ -118,6 +117,8 @@ simbolo ProcuraSimb(char *, simbolo);
 void    declareVariable(char *);
 void    validateVectorSize(int);
 void    validateVariableType();
+void    VariableReferenced(simbolo s);
+simbolo UsarVariavel(char *name);
 void    VerificaInicRef();
 
 /* Protótipos de errors */
@@ -331,7 +332,7 @@ AuxExpr4     : Term
 Term         : Factor
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor
              ;
-Factor       : Variable
+Factor       : Variable { VariableReferenced($1); }
              | INTCT    { printf("%d", $1);                 }
              | FLOATCT  { printf("%e", $1);                 }
              | CHARCT   { printReadableChar($1);            }
@@ -642,6 +643,13 @@ simbolo UsarVariavel(char *name){
   return simb;
 }
 
+/* Executada quando variavel eh referenciada em um fator */
+void VariableReferenced(simbolo s) {
+  if (s != NULL) {
+    s->ref = VERDADE;
+  }
+}
+
 /*
   hash (cadeia): funcao que determina e retorna a classe
   de cadeia na tabela de simbolos implementada por hashing
@@ -662,7 +670,7 @@ void VerificaInicRef()
   for(i = 0; i < NCLASSHASH; i++){
     if(tabsimb[i]) {
       for(s = tabsimb[i]; s!=NULL; s = s->prox){
-        if (s->ref == FALSO) {
+        if (s->tid == IDVAR && s->ref == FALSO) {
           VariavelNaoReferenciada(s);
         }
       }

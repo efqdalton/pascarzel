@@ -13,6 +13,7 @@ syntatic: lex.yy.c y.tab.c
 
 test-syntatic: syntatic
 	for teste in tests/*.mp; do \
+		echo "$$teste" ; \
 		./syntatic < $$teste > output/$$(basename $$teste .mp).mp ; \
 		./syntatic < output/$$(basename $$teste .mp).mp > output/$$(basename $$teste .mp).mp.mp ; \
 	done
