@@ -107,6 +107,7 @@ void    InsereListSimb(simbolo, listasimbolo*);
 void    AnulaListSimb(listasimbolo*);
 //simbolo ProcuraListSimb(char *);
 void    AdicTipoVar(listasimbolo);
+simbolo UsarVariavel(char *name);
 
 void    ImprimeTabSimb(void);
 simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo);
@@ -140,6 +141,9 @@ void    VariavelNaoReferenciada(simbolo s);
   char    carac;
   simbolo simb;
 }
+
+/* Declaracao dos tipos retornados pelas producoes */
+%type     <simb>      Variable
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -337,7 +341,7 @@ Factor       : Variable
              | OPPAR { printf("("); } Expression CLPAR { printf(")"); }
              | FuncCall
              ;
-Variable     : ID { printf("%s", $1); } Subscripts
+Variable     : ID { printf("%s", $1); simb = UsarVariavel($1); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; }
              ;
 Subscripts   : ;
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); }
@@ -622,6 +626,20 @@ simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo) {
   }
 
   return s;
+}
+
+/* Executada ao utilizar uma variavel */
+simbolo UsarVariavel(char *name){
+  simbolo simb;
+
+  simb = ProcuraSimb(name, escopo);
+  if (simb == NULL) {
+    NaoDeclarado(name);
+  } else if (simb->tid != IDVAR) {
+    TipoInadequado(name);
+  }
+
+  return simb;
 }
 
 /*
