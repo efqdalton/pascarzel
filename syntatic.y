@@ -118,6 +118,7 @@ void    declareVariable(char *);
 void    validateVectorSize(int);
 void    validateVariableType();
 void    VariableReferenced(simbolo s);
+void    VariableAssigned(simbolo s);
 simbolo UsarVariavel(char *name);
 void    VerificaInicRef();
 
@@ -312,7 +313,7 @@ ExprList     : Expression
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
              ;
-AssignStat   : { printTabs(); } Variable ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); }
+AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); }
              ;
 Expression   : AuxExpr1
              | Expression OROP { printf(" || "); } AuxExpr1
@@ -647,6 +648,13 @@ simbolo UsarVariavel(char *name){
 void VariableReferenced(simbolo s) {
   if (s != NULL) {
     s->ref = VERDADE;
+  }
+}
+
+void VariableAssigned(simbolo s) {
+  if (s != NULL) {
+    s->ref = VERDADE;
+    s->inic = VERDADE;
   }
 }
 
