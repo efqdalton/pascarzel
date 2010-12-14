@@ -128,6 +128,7 @@ int     CheckAdop(int, int, int);
 int     CheckRelop(int, int, int);
 int     CheckLogop(int, int, int);
 int     CheckNotop(int);
+void    CheckAssign(simbolo, int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -143,6 +144,7 @@ void    OperandoInvalidoAoResto();
 void    OperandoNaoComparavel();
 void    OperandosImproprioAosOperadoresLogicos();
 void    OperandoNaoNegavel();
+void    AtribuicaoInvalida();
 
 %}
 
@@ -335,7 +337,7 @@ ExprList     : Expression
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
              ;
-AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); }
+AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2, $6); }
              ;
 Expression   : AuxExpr1 { $$ = $1; }
              | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
@@ -746,7 +748,7 @@ int CheckMult(int term, int op, int factor){
   switch(op) {
     case MULT:
     case DIV:
-      if (term != INTEIRO && term != REAL && term != CARACTERE || factor != INTEIRO && factor != REAL && factor != CARACTERE)
+      if( (term != INTEIRO && term != REAL && term != CARACTERE) || (factor != INTEIRO && factor != REAL && factor != CARACTERE) )
         OperandoNaoAritmetico();
 
       if(term == REAL || factor == REAL) return REAL;
@@ -759,7 +761,7 @@ int CheckMult(int term, int op, int factor){
 }
 
 int CheckAdop(int term, int op, int factor){
-  if (term != INTEIRO && term != REAL && term != CARACTERE || factor != INTEIRO && factor != REAL && factor != CARACTERE)
+  if( (term != INTEIRO && term != REAL && term != CARACTERE) || (factor != INTEIRO && factor != REAL && factor != CARACTERE) )
     OperandoNaoAritmetico();
 
   if(term == REAL || factor == REAL) return REAL;
@@ -767,8 +769,8 @@ int CheckAdop(int term, int op, int factor){
 }
 
 int CheckRelop(int expr1, int op, int expr2){
-  if (expr1 == LOGICO || expr2 == LOGICO || expr1 != expr2 )
-    OperandoNaoComparavel();
+  if( (expr1 != INTEIRO && expr1 != REAL && expr1 != CARACTERE) || (expr2 != INTEIRO && expr2 != REAL && expr2 != CARACTERE) )
+    { printf("\n\n::%d %d::\n\n", expr1, expr2); OperandoNaoComparavel();}
 
   return LOGICO;
 }
@@ -781,10 +783,27 @@ int CheckLogop(int expr1, int op, int expr2){
 }
 
 int CheckNotop(int expr){
-  if (expr != LOGICO)
+  if(expr != LOGICO)
     OperandoNaoNegavel();
 
   return LOGICO;
+}
+
+void CheckAssign(simbolo variable, int expr_type){
+  switch(variable->tvar){
+    case INTEIRO:
+    case CARACTERE:
+      if( expr_type != INTEIRO && expr_type != CARACTERE )
+        AtribuicaoInvalida();
+      break;
+    case REAL:
+      if( expr_type != REAL && expr_type != INTEIRO && expr_type != CARACTERE )
+        AtribuicaoInvalida();
+      break;
+    case LOGICO:
+      if( expr_type != LOGICO )
+        AtribuicaoInvalida();
+  }
 }
 
 /*  Erros semanticos  */
@@ -838,4 +857,8 @@ void OperandosImproprioAosOperadoresLogicos(){
 
 void OperandoNaoNegavel(){
   addError("/* Operando não aceita negação */\n");
+}
+
+void AtribuicaoInvalida(){
+  addError("/* Atribuição invalida */\n");
 }
