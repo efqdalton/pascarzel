@@ -121,6 +121,8 @@ void    VariableReferenced(simbolo s);
 void    VariableAssigned(simbolo s);
 simbolo UsarVariavel(char *name);
 void    VerificaInicRef();
+int     CheckNegop(int);
+int     CheckFuncCall(char *id);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -129,6 +131,7 @@ void    VariavelDeTipoVoid();
 void    TipoInadequado(char *);
 void    NaoDeclarado(char *);
 void    VariavelNaoReferenciada(simbolo s);
+void    OperadorInvalidoAoMenosUnario();
 
 %}
 
@@ -302,7 +305,7 @@ WriteElem    : STRING { printf("%s", $1); }
              ;
 CallStat     : CALL { printWithTabs("call "); } FuncCall SCOLON { printf(";\n"); }
              ;
-FuncCall     : ID OPPAR { printf("%s(", $1); } Arguments CLPAR { printf(")"); }
+FuncCall     : ID OPPAR { printf("%s(", $1); } Arguments CLPAR { printf(")"); $$ = $1; }
              ;
 Arguments    : ;
              | ExprList
@@ -333,15 +336,15 @@ AuxExpr4     : Term
 Term         : Factor
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor
              ;
-Factor       : Variable { VariableReferenced($1); }
-             | INTCT    { printf("%d", $1);                 }
-             | FLOATCT  { printf("%e", $1);                 }
-             | CHARCT   { printReadableChar($1);            }
-             | TRUE     { printf("true");                   }
-             | FALSE    { printf("false");                  }
-             | NEGOP { printf("~"); } Factor
-             | OPPAR { printf("("); } Expression CLPAR { printf(")"); }
-             | FuncCall
+Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VERDADE; $$ = $1->tvar; } }
+             | INTCT    { printf("%d", $1);                              $$ = INTEIRO;                  }
+             | FLOATCT  { printf("%e", $1);                              $$ = REAL;                     }
+             | CHARCT   { printReadableChar($1);                         $$ = CARACTERE;                }
+             | TRUE     { printf("true");                                $$ = LOGICO;                   }
+             | FALSE    { printf("false");                               $$ = LOGICO;                   }
+             | NEGOP    { printf("~"); } Factor {                        $$ = CheckNegop($3);           }
+             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = $3;                       }
+             | FuncCall {                                                $$ = CheckFuncCall($1);        }
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; }
              ;
@@ -556,7 +559,7 @@ void AdicTipoVar(listasimbolo listsimb) {
   Caso ela ali esteja, retorna um ponteiro para sua celula;
   Caso contrario, retorna NULL.
 */
-simbolo ProcuraSimb (char *cadeia, simbolo escopo) {
+simbolo ProcuraSimb(char *cadeia, simbolo escopo) {
   simbolo s; int i;
   i = hash (cadeia);
   while (escopo != NULL) {
@@ -705,6 +708,17 @@ void ImprimeTabSimb() {
   }
 }
 
+int CheckNegop(int type){
+  if(type != INTEIRO && type != REAL && type != CARACTERE) OperadorInvalidoAoMenosUnario();
+  if (type == REAL) return REAL;
+  return INTEIRO;
+}
+
+int CheckFuncCall(char *id){
+  simbolo s;
+  s = ProcuraSimb(id, escopo);
+}
+
 /*  Erros semanticos  */
 void DeclaracaoRepetida(char *s){
   addError("/* Declaracao Repetida: %s */\n", s);
@@ -728,4 +742,8 @@ void TipoInadequado(char *s){
 
 void VariavelNaoReferenciada(simbolo s) {
   addError("/* Variavel nao referenciada: %s */\n", s->cadeia);
+}
+
+void OperadorInvalidoAoMenosUnario(){
+  addError("/* Operando improprio para menos unario */\n");
 }
