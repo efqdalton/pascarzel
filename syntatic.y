@@ -149,6 +149,9 @@ void    OperadorInvalidoAoMenosUnario();
 
 /* Declaracao dos tipos retornados pelas producoes */
 %type     <simb>      Variable
+%type     <valint>    Expression
+%type     <valint>    Factor
+%type     <cadeia>    FuncCall
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
