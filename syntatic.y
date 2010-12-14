@@ -911,6 +911,19 @@ void CheckLogic(int type){
   if(type != LOGICO) ExpressaoDeveriaSerLogica();
 }
 
+void CheckVariable(int index){
+  if($$->array == FALSO){
+    if($3 != 0) NaoEsperado("Subscrito\(s)");
+  }else{
+    if($3 == 0){
+      Esperado ("Subscrito\(s)");
+    }else{
+      if($$->ndims != $3)
+        Incompatibilidade("Numero de subscritos incompativel com declaracao");
+    }
+  }
+}
+
 /*  Erros semanticos  */
 void DeclaracaoRepetida(char *s){
   addError("/* Declaracao Repetida: %s */\n", s);
