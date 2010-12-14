@@ -132,6 +132,7 @@ void    VariavelDeTipoVoid();
 void    TipoInadequado(char *);
 void    NaoDeclarado(char *);
 void    VariavelNaoReferenciada(simbolo s);
+void    VariavelNaoInicializada(simbolo s);
 void    OperadorInvalidoAoMenosUnario();
 void    OperandoNaoAritmetico();
 void    OperandoInvalidoAoResto();
@@ -691,6 +692,9 @@ void VerificaInicRef()
         if (s->tid == IDVAR && s->ref == FALSO) {
           VariavelNaoReferenciada(s);
         }
+        if (s->tid == IDVAR && s->inic == FALSO) {
+          VariavelNaoInicializada(s);
+        }
       }
     }
   }
@@ -762,6 +766,10 @@ void NaoDeclarado(char *s){
 
 void TipoInadequado(char *s){
   addError("/* Identificador de Tipo Inadequado: %s */\n", s);
+}
+
+void VariavelNaoInicializada(simbolo s) {
+  addError("/* Variavel nao inicializada: %s */\n", s->cadeia);
 }
 
 void VariavelNaoReferenciada(simbolo s) {

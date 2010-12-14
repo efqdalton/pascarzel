@@ -1,10 +1,9 @@
-global { a: float; y, z: array[4] of int; }
 /* Funcao maior
 Calcula o maior valor entre os tres parametros.
 */
 function maior : int
 parameters {
-    b: float; c: float;
+    a, b: float; c: float;
 } local { maior: int; }
 statements
 {
@@ -32,7 +31,7 @@ statements
     read (x[1]);
     read (x[2]);
     read (x[3]);
-    write ( "O maior eh o ", maior(x, y, z), "o." );
+    write ( "O maior eh o ", maior(x[0], x[1], x[2]), "o." );
     call maior(x[2]);
 }
 
