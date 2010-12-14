@@ -16,7 +16,7 @@ function sayHello : void
   }
   statements {
     write("Hello\nWorld!");
-    real     := -3.14;
+    real     := ~3.14;
     barraene := '\n';
     return ;
   }
