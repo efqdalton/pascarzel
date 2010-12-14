@@ -169,6 +169,7 @@ void    OperandoNaoNegavel();
 void    AtribuicaoInvalida();
 void    ExpressaoDeveriaSerLogica();
 void    NumeroDeArgumentosIncorreto(int expected, int actual);
+void    TipoSubscritoInvalido();
 
 %}
 
@@ -182,6 +183,7 @@ void    NumeroDeArgumentosIncorreto(int expected, int actual);
   float   valreal;
   char    carac;
   simbolo simb;
+  int     nsubscr;
   infolistexpr infolexpr;
 }
 
@@ -196,6 +198,7 @@ void    NumeroDeArgumentosIncorreto(int expected, int actual);
 %type     <cadeia>    FuncCall
 %type     <valint>    Term
 %type     <infolexpr> ExprList Arguments
+%type     <nsubscr>   Subscripts SubscrList
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -396,11 +399,11 @@ Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VE
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; }
              ;
-Subscripts   : ;
-             | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); }
+Subscripts   : {$$ = 0;}
+             | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); $$ = $3; }
              ;
-SubscrList   : AuxExpr4
-             | SubscrList COMMA { printf(", "); } AuxExpr4
+SubscrList   : AuxExpr4 { if($1 != INTEIRO && $1 != CARACTERE) TipoSubscritoInvalido(); $$ = 1; }
+             | SubscrList COMMA { printf(", "); } AuxExpr4 { if($4 != INTEIRO && $4 != CARACTERE) TipoSubscritoInvalido(); $$ = $1 + 1; }
              ;
 
 %%
@@ -969,7 +972,11 @@ void ExpressaoDeveriaSerLogica(){
   addError("/* Expressao para IF ou WHILE deve ser lógica */\n");
 }
 
-void    NumeroDeArgumentosIncorreto(int expected, int actual)
+void NumeroDeArgumentosIncorreto(int expected, int actual)
 {
   addError("/* Numero de parametros incorreto. Esperado: %d, Recebido: %d */\n", expected, actual);
+}
+
+void TipoSubscritoInvalido(){
+  addError("/* Tipo de subscrito invalido, deve ser inteiro ou caractere */\n");
 }
