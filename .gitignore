@@ -12,3 +12,5 @@ y.tab.c
 a.out
 lex.yy.c
 syntatic
+# vim swap files
+*.swp
