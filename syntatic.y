@@ -124,6 +124,7 @@ void    VerificaInicRef();
 int     CheckNegop(int);
 int     CheckFuncCall(char *id);
 int     CheckMult(int, int, int);
+int     CheckAdop(int, int, int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -152,6 +153,7 @@ void    OperandoInvalidoAoResto();
 }
 
 /* Declaracao dos tipos retornados pelas producoes */
+%type     <valint>    AuxExpr4
 %type     <simb>      Variable
 %type     <valint>    Expression
 %type     <valint>    Factor
@@ -338,10 +340,10 @@ AuxExpr2     : AuxExpr3
 AuxExpr3     : AuxExpr4
              | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4
              ;
-AuxExpr4     : Term
-             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term
+AuxExpr4     : Term { $$ = $1; }
+             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
              ;
-Term         : Factor
+Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
              ;
 Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VERDADE; $$ = $1->tvar; } }
@@ -745,6 +747,14 @@ int CheckMult(int term, int op, int factor){
         OperandoInvalidoAoResto();
       return INTEIRO;
     }
+}
+
+int CheckAdop(int term, int op, int factor){
+  if (term != INTEIRO && term != REAL && term != CARACTERE || factor != INTEIRO && factor != REAL && factor != CARACTERE)
+    OperandoNaoAritmetico();
+
+  if(term == REAL || factor == REAL) return REAL;
+  else return INTEIRO;
 }
 
 /*  Erros semanticos  */
