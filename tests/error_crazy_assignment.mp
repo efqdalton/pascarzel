@@ -16,10 +16,10 @@ function fatorial : int
 main
   local {
     a : int;
-    b : logic;
+    b : char;
   }
   statements {
     a := 1;
-    b := true;
-    b := b && fatorial(a);
+    b := 'd';
+    a := (b > fatorial(a));
   }

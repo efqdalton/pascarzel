@@ -145,6 +145,12 @@ void    VerificaInicRef();
 int     CheckNegop(int);
 int     CheckFuncCall(char *id);
 int     CheckMult(int, int, int);
+int     CheckAdop(int, int, int);
+int     CheckRelop(int, int, int);
+int     CheckLogop(int, int, int);
+int     CheckNotop(int);
+void    CheckAssign(simbolo, int);
+void    CheckLogic(int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -157,6 +163,11 @@ void    VariavelNaoInicializada(simbolo s);
 void    OperadorInvalidoAoMenosUnario();
 void    OperandoNaoAritmetico();
 void    OperandoInvalidoAoResto();
+void    OperandoNaoComparavel();
+void    OperandosImproprioAosOperadoresLogicos();
+void    OperandoNaoNegavel();
+void    AtribuicaoInvalida();
+void    ExpressaoDeveriaSerLogica();
 
 %}
 
@@ -174,6 +185,10 @@ void    OperandoInvalidoAoResto();
 }
 
 /* Declaracao dos tipos retornados pelas producoes */
+%type     <valint>    AuxExpr1
+%type     <valint>    AuxExpr2
+%type     <valint>    AuxExpr3
+%type     <valint>    AuxExpr4
 %type     <simb>      Variable
 %type     <valint>    Expression
 %type     <valint>    Factor
@@ -270,7 +285,7 @@ DimList      : INTCT               { printf("%d", $1); validateVectorSize($1); }
 FuncList     :
              | FuncList FuncDef
              ;
-FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); InicFunc($3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); FimFunc(); }
+FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); } ScalarType { printf("\n"); InicFunc($3); } Params LocDecls Statmts { printDecreasingTabs("\n"); FimFunc(); }
              ;
 MainDef      : { /* AnulaListSimb(); */ } MAIN { printIncreasingTabs("main \n"); InicFunc("##main"); } LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
@@ -304,12 +319,12 @@ Statement    : CompoundStat
              ;
 CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatList CLBRACE {  decreaseTabSize(); printIncreasingTabs("}\n"); }
              ;
-IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
+IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
              ;
 ElseStat     : ;
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
              ;
-WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); } Statement { decreaseTabSize(); }
+WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3); } Statement { decreaseTabSize(); }
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
@@ -347,24 +362,24 @@ ExprList     : Expression { $$ = InicListExpr($1); }
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
              ;
-AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); }
+AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2, $6); }
              ;
-Expression   : AuxExpr1
-             | Expression OROP { printf(" || "); } AuxExpr1
+Expression   : AuxExpr1 { $$ = $1; }
+             | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
              ;
-AuxExpr1     : AuxExpr2
-             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2
+AuxExpr1     : AuxExpr2 { $$ = $1; }
+             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$ = CheckLogop($1, $2, $4); }
              ;
-AuxExpr2     : AuxExpr3
-             | NOTOP { printf("!"); } AuxExpr3
+AuxExpr2     : AuxExpr3 { $$ = $1; }
+             | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3); }
              ;
-AuxExpr3     : AuxExpr4
-             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4
+AuxExpr3     : AuxExpr4 { $$ = $1; }
+             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$ = CheckRelop($1, $2, $4); }
              ;
-AuxExpr4     : Term
-             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term
+AuxExpr4     : Term { $$ = $1; }
+             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
              ;
-Term         : Factor
+Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
              ;
 Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VERDADE; $$ = $1->tvar; } }
@@ -800,7 +815,7 @@ int CheckMult(int term, int op, int factor){
   switch(op) {
     case MULT:
     case DIV:
-      if (term != INTEIRO && term != REAL && term != CARACTERE || factor != INTEIRO && factor != REAL && factor != CARACTERE)
+      if( (term != INTEIRO && term != REAL && term != CARACTERE) || (factor != INTEIRO && factor != REAL && factor != CARACTERE) )
         OperandoNaoAritmetico();
 
       if(term == REAL || factor == REAL) return REAL;
@@ -810,6 +825,56 @@ int CheckMult(int term, int op, int factor){
         OperandoInvalidoAoResto();
       return INTEIRO;
     }
+}
+
+int CheckAdop(int term, int op, int factor){
+  if( (term != INTEIRO && term != REAL && term != CARACTERE) || (factor != INTEIRO && factor != REAL && factor != CARACTERE) )
+    OperandoNaoAritmetico();
+
+  if(term == REAL || factor == REAL) return REAL;
+  else return INTEIRO;
+}
+
+int CheckRelop(int expr1, int op, int expr2){
+  if( (expr1 != INTEIRO && expr1 != REAL && expr1 != CARACTERE) || (expr2 != INTEIRO && expr2 != REAL && expr2 != CARACTERE) )
+    { printf("\n\n::%d %d::\n\n", expr1, expr2); OperandoNaoComparavel();}
+
+  return LOGICO;
+}
+
+int CheckLogop(int expr1, int op, int expr2){
+  if(expr1 != expr2)
+    OperandosImproprioAosOperadoresLogicos();
+
+  return LOGICO;
+}
+
+int CheckNotop(int expr){
+  if(expr != LOGICO)
+    OperandoNaoNegavel();
+
+  return LOGICO;
+}
+
+void CheckAssign(simbolo variable, int expr_type){
+  switch(variable->tvar){
+    case INTEIRO:
+    case CARACTERE:
+      if( expr_type != INTEIRO && expr_type != CARACTERE )
+        AtribuicaoInvalida();
+      break;
+    case REAL:
+      if( expr_type != REAL && expr_type != INTEIRO && expr_type != CARACTERE )
+        AtribuicaoInvalida();
+      break;
+    case LOGICO:
+      if( expr_type != LOGICO )
+        AtribuicaoInvalida();
+  }
+}
+
+void CheckLogic(int type){
+  if(type != LOGICO) ExpressaoDeveriaSerLogica();
 }
 
 /*  Erros semanticos  */
@@ -851,4 +916,24 @@ void OperandoNaoAritmetico(){
 
 void OperandoInvalidoAoResto(){
   addError("/* Operando improprio para operador resto */\n");
+}
+
+void OperandoNaoComparavel(){
+  addError("/* Operandos incomparáveis */\n");
+}
+
+void OperandosImproprioAosOperadoresLogicos(){
+  addError("/* Operandos improprios para operadores logicos */\n");
+}
+
+void OperandoNaoNegavel(){
+  addError("/* Operando não aceita negação */\n");
+}
+
+void AtribuicaoInvalida(){
+  addError("/* Atribuição invalida */\n");
+}
+
+void ExpressaoDeveriaSerLogica(){
+  addError("/* Expressao para IF ou WHILE deve ser lógica */\n");
 }
