@@ -125,6 +125,9 @@ int     CheckNegop(int);
 int     CheckFuncCall(char *id);
 int     CheckMult(int, int, int);
 int     CheckAdop(int, int, int);
+int     CheckRelop(int, int, int);
+int     CheckLogop(int, int, int);
+int     CheckNotop(int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -137,6 +140,9 @@ void    VariavelNaoInicializada(simbolo s);
 void    OperadorInvalidoAoMenosUnario();
 void    OperandoNaoAritmetico();
 void    OperandoInvalidoAoResto();
+void    OperandoNaoComparavel();
+void    OperandosImproprioAosOperadoresLogicos();
+void    OperandoNaoNegavel();
 
 %}
 
@@ -153,6 +159,9 @@ void    OperandoInvalidoAoResto();
 }
 
 /* Declaracao dos tipos retornados pelas producoes */
+%type     <valint>    AuxExpr1
+%type     <valint>    AuxExpr2
+%type     <valint>    AuxExpr3
 %type     <valint>    AuxExpr4
 %type     <simb>      Variable
 %type     <valint>    Expression
@@ -328,17 +337,17 @@ ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              ;
 AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); }
              ;
-Expression   : AuxExpr1
-             | Expression OROP { printf(" || "); } AuxExpr1
+Expression   : AuxExpr1 { $$ = $1; }
+             | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
              ;
-AuxExpr1     : AuxExpr2
-             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2
+AuxExpr1     : AuxExpr2 { $$ = $1; }
+             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$ = CheckLogop($1, $2, $4); }
              ;
-AuxExpr2     : AuxExpr3
-             | NOTOP { printf("!"); } AuxExpr3
+AuxExpr2     : AuxExpr3 { $$ = $1; }
+             | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3); }
              ;
-AuxExpr3     : AuxExpr4
-             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4
+AuxExpr3     : AuxExpr4 { $$ = $1; }
+             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$ = CheckRelop($1, $2, $4); }
              ;
 AuxExpr4     : Term { $$ = $1; }
              | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
@@ -757,6 +766,27 @@ int CheckAdop(int term, int op, int factor){
   else return INTEIRO;
 }
 
+int CheckRelop(int expr1, int op, int expr2){
+  if (expr1 == LOGICO || expr2 == LOGICO || expr1 != expr2 )
+    OperandoNaoComparavel();
+
+  return LOGICO;
+}
+
+int CheckLogop(int expr1, int op, int expr2){
+  if(expr1 != expr2)
+    OperandosImproprioAosOperadoresLogicos();
+
+  return LOGICO;
+}
+
+int CheckNotop(int expr){
+  if (expr != LOGICO)
+    OperandoNaoNegavel();
+
+  return LOGICO;
+}
+
 /*  Erros semanticos  */
 void DeclaracaoRepetida(char *s){
   addError("/* Declaracao Repetida: %s */\n", s);
@@ -796,4 +826,16 @@ void OperandoNaoAritmetico(){
 
 void OperandoInvalidoAoResto(){
   addError("/* Operando improprio para operador resto */\n");
+}
+
+void OperandoNaoComparavel(){
+  addError("/* Operandos incomparáveis */\n");
+}
+
+void OperandosImproprioAosOperadoresLogicos(){
+  addError("/* Operandos improprios para operadores logicos */\n");
+}
+
+void OperandoNaoNegavel(){
+  addError("/* Operando não aceita negação */\n");
 }

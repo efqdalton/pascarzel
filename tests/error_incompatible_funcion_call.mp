@@ -21,5 +21,5 @@ main
   statements {
     a := 1;
     b := true;
-    b := b * fatorial(a);
+    b := b && fatorial(a);
   }

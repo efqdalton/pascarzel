@@ -6,6 +6,6 @@ main
   }
   statements {
     a := 1;
-    b := true;
+    b := a > 3;
     c := a+b;
   }
