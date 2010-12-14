@@ -123,6 +123,7 @@ simbolo UsarVariavel(char *name);
 void    VerificaInicRef();
 int     CheckNegop(int);
 int     CheckFuncCall(char *id);
+int     CheckMult(int, int, int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -132,6 +133,8 @@ void    TipoInadequado(char *);
 void    NaoDeclarado(char *);
 void    VariavelNaoReferenciada(simbolo s);
 void    OperadorInvalidoAoMenosUnario();
+void    OperandoNaoAritmetico();
+void    OperandoInvalidoAoResto();
 
 %}
 
@@ -152,6 +155,7 @@ void    OperadorInvalidoAoMenosUnario();
 %type     <valint>    Expression
 %type     <valint>    Factor
 %type     <cadeia>    FuncCall
+%type     <valint>    Term
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -337,7 +341,7 @@ AuxExpr4     : Term
              | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term
              ;
 Term         : Factor
-             | Term MULTOP { printf("%s", translateOperator($2)); } Factor
+             | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
              ;
 Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VERDADE; $$ = $1->tvar; } }
              | INTCT    { printf("%d", $1);                              $$ = INTEIRO;                  }
@@ -720,6 +724,23 @@ int CheckNegop(int type){
 int CheckFuncCall(char *id){
   simbolo s;
   s = ProcuraSimb(id, escopo);
+  return s->tvar;
+}
+
+int CheckMult(int term, int op, int factor){
+  switch(op) {
+    case MULT:
+    case DIV:
+      if (term != INTEIRO && term != REAL && term != CARACTERE || factor != INTEIRO && factor != REAL && factor != CARACTERE)
+        OperandoNaoAritmetico();
+
+      if(term == REAL || factor == REAL) return REAL;
+      else return INTEIRO;
+    case RESTO:
+      if(term != INTEIRO && term != CARACTERE || factor != INTEIRO && factor != CARACTERE)
+        OperandoInvalidoAoResto();
+      return INTEIRO;
+    }
 }
 
 /*  Erros semanticos  */
@@ -749,4 +770,12 @@ void VariavelNaoReferenciada(simbolo s) {
 
 void OperadorInvalidoAoMenosUnario(){
   addError("/* Operando improprio para menos unario */\n");
+}
+
+void OperandoNaoAritmetico(){
+  addError("/* Operando improprio para operador aritmetico */\n");
+}
+
+void OperandoInvalidoAoResto(){
+  addError("/* Operando improprio para operador resto */\n");
 }
