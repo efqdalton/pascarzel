@@ -170,6 +170,9 @@ void    AtribuicaoInvalida();
 void    ExpressaoDeveriaSerLogica();
 void    NumeroDeArgumentosIncorreto(int expected, int actual);
 void    TipoSubscritoInvalido();
+void    SubscritoNaoEsperado();
+void    SubscritoEsperado();
+void    NumeroDeSubscritoIncompativel();
 
 %}
 
@@ -913,13 +916,13 @@ void CheckLogic(int type){
 
 void CheckVariable(int index){
   if($$->array == FALSO){
-    if($3 != 0) NaoEsperado("Subscrito\(s)");
+    if($3 != 0) SubscritoNaoEsperado();
   }else{
     if($3 == 0){
-      Esperado ("Subscrito\(s)");
+      SubscritoEsperado();
     }else{
       if($$->ndims != $3)
-        Incompatibilidade("Numero de subscritos incompativel com declaracao");
+        NumeroDeSubscritoIncompativel();
     }
   }
 }
@@ -992,4 +995,16 @@ void NumeroDeArgumentosIncorreto(int expected, int actual)
 
 void TipoSubscritoInvalido(){
   addError("/* Tipo de subscrito invalido, deve ser inteiro ou caractere */\n");
+}
+
+void SubscritoNaoEsperado(){
+  addError("/* Subcrito não esperado para variavel onde foi aplicado */\n");
+}
+
+void SubscritoEsperado(){
+  addError("/* Um subcrito era esperado para variavel onde foi aplicado */\n");
+}
+
+void NumeroDeSubscritoIncompativel(){
+  addError("/* Foram aplicados mais sobresscritos do que o devido */\n");
 }
