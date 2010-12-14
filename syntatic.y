@@ -87,6 +87,27 @@ struct elemlistsimb {
   elemlistsimb *prox;
 };
 
+/* Tipo para tratamento de lista de argumentos para funcoes */
+typedef struct elemlisttipo elemlisttipo;
+typedef elemlisttipo *listtipo;
+struct elemlisttipo {
+  int tid;
+  elemlisttipo *prox;
+};
+
+typedef struct infolistexpr infolistexpr;
+struct infolistexpr {
+  elemlisttipo *elem;
+  int nargs;
+};
+
+void CheckArgumentos(listtipo largumentos, listasimbolo lparam);
+void ConcatListTipo(listtipo l1, listtipo l2);
+listtipo InicListTipo(int tid);
+infolistexpr EmptyInfoList();
+infolistexpr InicListExpr(int tid);
+infolistexpr ConcatListExpr(infolistexpr l1, infolistexpr l2);
+
 /* Variaveis globais para a tabela de simbolos e analise semantica */
 simbolo tabsimb[NCLASSHASH];
 simbolo simb;
@@ -160,6 +181,7 @@ void    ExpressaoDeveriaSerLogica();
   float   valreal;
   char    carac;
   simbolo simb;
+  infolistexpr infolexpr;
 }
 
 /* Declaracao dos tipos retornados pelas producoes */
@@ -172,6 +194,7 @@ void    ExpressaoDeveriaSerLogica();
 %type     <valint>    Factor
 %type     <cadeia>    FuncCall
 %type     <valint>    Term
+%type     <infolexpr> ExprList Arguments
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -309,7 +332,7 @@ ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" :
              ;
 Direcao      : TO     { printf(" to "); }
              | DOWNTO { printf(" downto "); }
-             ;             
+             ;
 StepDef      : ;
              | STEP { printf(" step "); } Expression
              ;
@@ -330,12 +353,12 @@ CallStat     : CALL { printWithTabs("call "); } FuncCall SCOLON { printf(";\n");
              ;
 FuncCall     : ID OPPAR { printf("%s(", $1); } Arguments CLPAR { printf(")"); strcpy($$, $1); }
              ;
-Arguments    : ;
+Arguments    : { $$ = EmptyInfoList(); }
              | ExprList
-             ;             
-ExprList     : Expression
-             | ExprList COMMA { printf(", "); } Expression
-             ;                        
+             ;
+ExprList     : Expression { $$ = InicListExpr($1); }
+             | ExprList COMMA { printf(", "); } Expression { $$ = ConcatListExpr($1, InicListExpr($4)); }
+             ;
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
              ;
@@ -570,11 +593,53 @@ void AnulaListSimb(listasimbolo *listsimb) {
 //  return NULL;
 //}
 
+/* Funcoes para manipulacao de lista de tipos */
+void CheckArgumentos(listtipo largumentos, listasimbolo lparam)
+{}
+
+void ConcatListTipo(listtipo l1, listtipo l2)
+{
+  while (l1->prox) {
+    l1 = l1->prox;
+  }
+  l1->prox = l2;
+}
+
+listtipo InicListTipo(int tid)
+{
+  listtipo l = malloc(sizeof(elemlisttipo));
+  l->tid = tid;
+  l->prox = NULL;
+  return l;
+}
+
+infolistexpr InicListExpr(int tid)
+{
+  infolistexpr list;
+  list.elem = InicListTipo(tid);
+  list.nargs = 1;
+  return list;
+}
+
+infolistexpr ConcatListExpr(infolistexpr l1, infolistexpr l2)
+{
+  infolistexpr l;
+  l.nargs = l1.nargs + l2.nargs;
+  ConcatListTipo(l1.elem, l2.elem);
+  l.elem = l1.elem;
+}
+
 /* AdicTipoVar: Coloca o tipo de variavel corrente em todos os simbolos da lista de simbolos */
 void AdicTipoVar(listasimbolo listsimb) {
   elemlistsimb *p;
   validateVariableType();
   for(p=listsimb; p!=NULL; p = p->prox) p->simb->tvar = tipocorrente;
+}
+
+infolistexpr EmptyInfoList() {
+  infolistexpr infolist;
+  infolist.elem = NULL;
+  infolist.nargs = 0;
 }
 
 /*
