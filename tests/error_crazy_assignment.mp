@@ -19,7 +19,9 @@ main
     b : char;
   }
   statements {
-    a := 1;
-    b := 'd';
-    a := (b > fatorial(a));
+    if true then {
+      a := 1;
+      b := 'd';
+      a := (b > fatorial(a));
+    }
   }

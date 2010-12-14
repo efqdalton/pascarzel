@@ -772,7 +772,7 @@ int CheckAdop(int term, int op, int factor){
 
 int CheckRelop(int expr1, int op, int expr2){
   if( (expr1 != INTEIRO && expr1 != REAL && expr1 != CARACTERE) || (expr2 != INTEIRO && expr2 != REAL && expr2 != CARACTERE) )
-    { printf("\n\n::%d %d::\n\n", expr1, expr2); OperandoNaoComparavel();}
+    { OperandoNaoComparavel();}
 
   return LOGICO;
 }
