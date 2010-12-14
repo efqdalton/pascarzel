@@ -292,8 +292,8 @@ StepDef      : ;
              ;
 ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); }
              ;
-VarList      : Variable
-             | VarList COMMA { printf(", "); } Variable
+VarList      : Variable { VariableAssigned($1); }
+             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4); }
              ;
 WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); }
              ;
