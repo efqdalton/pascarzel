@@ -285,7 +285,7 @@ WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf("
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
-ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" := "); } Expression Direcao Expression StepDef DO { printf(" do\n"); } Statement { decreaseTabSize(); }
+ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" := "); VariableAssigned($3); } Expression Direcao Expression StepDef DO { printf(" do\n"); } Statement { decreaseTabSize(); }
              ;
 Direcao      : TO     { printf(" to "); }
              | DOWNTO { printf(" downto "); }
@@ -295,8 +295,8 @@ StepDef      : ;
              ;
 ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); }
              ;
-VarList      : Variable
-             | VarList COMMA { printf(", "); } Variable
+VarList      : Variable { VariableAssigned($1); }
+             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4); }
              ;
 WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); }
              ;

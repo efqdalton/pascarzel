@@ -1,4 +1,4 @@
-global { a: float; }
+global { a: float; y, z: array[4] of int; }
 /* Funcao maior
 Calcula o maior valor entre os tres parametros.
 */
