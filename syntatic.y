@@ -260,7 +260,7 @@ DimList      : INTCT               { printf("%d", $1); validateVectorSize($1); }
 FuncList     :
              | FuncList FuncDef
              ;
-FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); InicFunc($3); } ScalarType { printf("\n"); } Params LocDecls Statmts { printDecreasingTabs("\n"); FimFunc(); }
+FuncDef      : { /* AnulaListSimb(); */ } FUNCTION ID COLON { printIncreasingTabs("function %s : ", $3); } ScalarType { printf("\n"); InicFunc($3); } Params LocDecls Statmts { printDecreasingTabs("\n"); FimFunc(); }
              ;
 MainDef      : { /* AnulaListSimb(); */ } MAIN { printIncreasingTabs("main \n"); InicFunc("##main"); } LocDecls Statmts { printDecreasingTabs("\n"); }
              ;
