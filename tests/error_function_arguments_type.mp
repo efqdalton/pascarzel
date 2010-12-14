@@ -9,5 +9,5 @@ function sayHello : void
 
 main
   statements {
-    call sayHello();
+    call sayHello(true);
   }

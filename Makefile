@@ -9,7 +9,7 @@ y.tab.c: syntatic.y
 	yacc --report state syntatic.y
 
 syntatic: lex.yy.c y.tab.c
-	gcc y.tab.c yyerror.c main.c -lfl -o syntatic
+	gcc -ggdb y.tab.c yyerror.c main.c -lfl -o syntatic
 
 test-syntatic: syntatic
 	for teste in tests/*.mp; do \

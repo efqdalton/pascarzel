@@ -101,7 +101,7 @@ struct infolistexpr {
   int nargs;
 };
 
-void CheckArgumentos(listtipo largumentos, listasimbolo lparam);
+void CheckArgumentos(infolistexpr largumentos, simbolo lparam);
 void ConcatListTipo(listtipo l1, listtipo l2);
 listtipo InicListTipo(int tid);
 infolistexpr EmptyInfoList();
@@ -140,7 +140,7 @@ void    validateVectorSize(int);
 void    validateVariableType();
 void    VariableReferenced(simbolo s);
 void    VariableAssigned(simbolo s);
-simbolo UsarVariavel(char *name);
+simbolo UsarVariavel(char *name, int tid);
 void    VerificaInicRef();
 int     CheckNegop(int);
 int     CheckFuncCall(char *id);
@@ -168,6 +168,7 @@ void    OperandosImproprioAosOperadoresLogicos();
 void    OperandoNaoNegavel();
 void    AtribuicaoInvalida();
 void    ExpressaoDeveriaSerLogica();
+void    NumeroDeArgumentosIncorreto(int expected, int actual);
 
 %}
 
@@ -351,7 +352,8 @@ WriteElem    : STRING { printf("%s", $1); }
              ;
 CallStat     : CALL { printWithTabs("call "); } FuncCall SCOLON { printf(";\n"); }
              ;
-FuncCall     : ID OPPAR { printf("%s(", $1); } Arguments CLPAR { printf(")"); strcpy($$, $1); }
+FuncCall     : ID OPPAR { $<simb>$ = UsarVariavel($1, IDFUNC); printf("%s(", $1); }
+               Arguments CLPAR { CheckArgumentos($4, $<simb>3); printf(")"); strcpy($$, $1); }
              ;
 Arguments    : { $$ = EmptyInfoList(); }
              | ExprList
@@ -392,7 +394,7 @@ Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VE
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = $3;                       }
              | FuncCall {                                                $$ = CheckFuncCall($1);        }
              ;
-Variable     : ID { printf("%s", $1); simb = UsarVariavel($1); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; }
+Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; }
              ;
 Subscripts   : ;
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); }
@@ -434,8 +436,8 @@ void InicFunc(char *id)
 void FimFunc()
 {
   escopo = simb = escopo->escopo;
-  AnulaListSimb(&pontvardecl);
-  AnulaListSimb(&pontparam);
+  //AnulaListSimb(&pontvardecl);
+  //AnulaListSimb(&pontparam);
 }
 
 // Start declaring function parameters
@@ -564,11 +566,20 @@ void InicListSimb(listasimbolo *listsimb){
 /* InsereListSimb: Insere um simbolo na lista linear global de simbolos
    simb: simbolo a ser inserido */
 void InsereListSimb(simbolo simb, listasimbolo *listsimb){
-  elemlistsimb *p;
-  p = *listsimb;
-  *listsimb = malloc(sizeof(elemlistsimb));
-  (*listsimb)->simb = simb;
-  (*listsimb)->prox = p;
+  elemlistsimb *p = malloc(sizeof(elemlistsimb));
+
+  p->prox = NULL;
+  p->simb = simb;
+
+  if (*listsimb == NULL) {
+    *listsimb = p;
+    return;
+  }
+
+  listasimbolo lsimb = *listsimb;
+
+  while (lsimb->prox != NULL) lsimb = lsimb->prox;
+  lsimb->prox = p;
 }
 
 /*  AnulaListSimb: Anula a corrente lista linear de simbolos  */
@@ -594,8 +605,25 @@ void AnulaListSimb(listasimbolo *listsimb) {
 //}
 
 /* Funcoes para manipulacao de lista de tipos */
-void CheckArgumentos(listtipo largumentos, listasimbolo lparam)
-{}
+void CheckArgumentos(infolistexpr infoargumentos, simbolo function)
+{
+  listasimbolo lparam;
+  listtipo largumentos;
+
+  if (function == NULL) return;
+  if (infoargumentos.nargs != function->nparam) {
+    NumeroDeArgumentosIncorreto(function->nparam, infoargumentos.nargs);
+    return;
+  }
+  lparam = function->listparam->prox;
+  largumentos = infoargumentos.elem;
+  while (largumentos != NULL) {
+    CheckAssign(lparam->simb, largumentos->tid);
+    largumentos = largumentos->prox;
+    lparam = lparam->prox;
+  }
+
+}
 
 void ConcatListTipo(listtipo l1, listtipo l2)
 {
@@ -627,6 +655,8 @@ infolistexpr ConcatListExpr(infolistexpr l1, infolistexpr l2)
   l.nargs = l1.nargs + l2.nargs;
   ConcatListTipo(l1.elem, l2.elem);
   l.elem = l1.elem;
+
+  return l;
 }
 
 /* AdicTipoVar: Coloca o tipo de variavel corrente em todos os simbolos da lista de simbolos */
@@ -714,6 +744,7 @@ simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo) {
     // Insere noh lider na lista de parametros
     s->listparam = (elemlistsimb*) malloc(sizeof(elemlistsimb));
     s->listparam->prox = NULL;
+    s->listparam->simb = (void*) -1;
     s->nparam = 0;
     InsereListSimb(s, &pontfunc);
   }
@@ -722,13 +753,13 @@ simbolo InsereSimb(char *cadeia, int tid, int tvar, simbolo escopo) {
 }
 
 /* Executada ao utilizar uma variavel */
-simbolo UsarVariavel(char *name){
+simbolo UsarVariavel(char *name, int tid){
   simbolo simb;
 
   simb = ProcuraSimb(name, escopo);
   if (simb == NULL) {
     NaoDeclarado(name);
-  } else if (simb->tid != IDVAR) {
+  } else if (simb->tid != tid) {
     TipoInadequado(name);
   }
 
@@ -936,4 +967,9 @@ void AtribuicaoInvalida(){
 
 void ExpressaoDeveriaSerLogica(){
   addError("/* Expressao para IF ou WHILE deve ser lógica */\n");
+}
+
+void    NumeroDeArgumentosIncorreto(int expected, int actual)
+{
+  addError("/* Numero de parametros incorreto. Esperado: %d, Recebido: %d */\n", expected, actual);
 }
