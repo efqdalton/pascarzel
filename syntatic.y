@@ -308,7 +308,7 @@ WriteElem    : STRING { printf("%s", $1); }
              ;
 CallStat     : CALL { printWithTabs("call "); } FuncCall SCOLON { printf(";\n"); }
              ;
-FuncCall     : ID OPPAR { printf("%s(", $1); } Arguments CLPAR { printf(")"); $$ = $1; }
+FuncCall     : ID OPPAR { printf("%s(", $1); } Arguments CLPAR { printf(")"); strcpy($$, $1); }
              ;
 Arguments    : ;
              | ExprList
