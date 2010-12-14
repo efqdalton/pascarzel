@@ -129,6 +129,7 @@ int     CheckRelop(int, int, int);
 int     CheckLogop(int, int, int);
 int     CheckNotop(int);
 void    CheckAssign(simbolo, int);
+void    CheckLogic(int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -145,6 +146,7 @@ void    OperandoNaoComparavel();
 void    OperandosImproprioAosOperadoresLogicos();
 void    OperandoNaoNegavel();
 void    AtribuicaoInvalida();
+void    ExpressaoDeveriaSerLogica();
 
 %}
 
@@ -294,12 +296,12 @@ Statement    : CompoundStat
              ;
 CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatList CLBRACE {  decreaseTabSize(); printIncreasingTabs("}\n"); }
              ;
-IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
+IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
              ;
 ElseStat     : ;
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
              ;
-WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); } Statement { decreaseTabSize(); }
+WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3); } Statement { decreaseTabSize(); }
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
@@ -806,6 +808,10 @@ void CheckAssign(simbolo variable, int expr_type){
   }
 }
 
+void CheckLogic(int type){
+  if(type != LOGICO) ExpressaoDeveriaSerLogica();
+}
+
 /*  Erros semanticos  */
 void DeclaracaoRepetida(char *s){
   addError("/* Declaracao Repetida: %s */\n", s);
@@ -861,4 +867,8 @@ void OperandoNaoNegavel(){
 
 void AtribuicaoInvalida(){
   addError("/* Atribuição invalida */\n");
+}
+
+void ExpressaoDeveriaSerLogica(){
+  addError("/* Expressao para IF ou WHILE deve ser lógica */\n");
 }
