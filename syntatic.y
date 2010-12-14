@@ -151,6 +151,7 @@ int     CheckLogop(int, int, int);
 int     CheckNotop(int);
 void    CheckAssign(simbolo, int);
 void    CheckLogic(int);
+void    CheckVariable(simbolo, int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -400,7 +401,7 @@ Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VE
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = $3;                       }
              | FuncCall {                                                $$ = CheckFuncCall($1);        }
              ;
-Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; }
+Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; CheckVariable($$, $3); }
              ;
 Subscripts   : {$$ = 0;}
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); $$ = $3; }
@@ -914,14 +915,14 @@ void CheckLogic(int type){
   if(type != LOGICO) ExpressaoDeveriaSerLogica();
 }
 
-void CheckVariable(int index){
-  if($$->array == FALSO){
-    if($3 != 0) SubscritoNaoEsperado();
+void CheckVariable(simbolo simb, int index){
+  if(simb->array == FALSO){
+    if(index != 0) SubscritoNaoEsperado();
   }else{
-    if($3 == 0){
+    if(index == 0){
       SubscritoEsperado();
     }else{
-      if($$->ndims != $3)
+      if(simb->ndims != index)
         NumeroDeSubscritoIncompativel();
     }
   }
