@@ -5,11 +5,14 @@
 int hasErrors = 0;
 
 void addError(char *buff, ...){
-  va_list arglist;
+  va_list arglist, arglist_copy;
   va_start(arglist, buff);
+  va_copy(arglist_copy, arglist);
   vfprintf(stderr, buff, arglist);
-  hasErrors = 1;       
+  vfprintf(stdout, buff, arglist_copy);
+  hasErrors = 1;
   va_end(arglist);
+  va_end(arglist_copy);
 }
 
 int main(){
