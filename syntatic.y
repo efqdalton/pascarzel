@@ -281,6 +281,7 @@ simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
 
 
+infoexpressao VariableFactor  (infovariavel infovar);
 infoexpressao IntFactor  (int value);
 infoexpressao FloatFactor(float value);
 infoexpressao CharFactor (char value);
@@ -505,7 +506,7 @@ AuxExpr4     : Term { $$ = $1;}
 Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
              ;
-Factor       : Variable { VariableReferenced($1.simb);                   if ($1.simb != NULL) $$.tipo = $1.simb->tvar;             }
+Factor       : Variable { VariableReferenced($1.simb);                   $$ = VariableFactor($1);             }
              | INTCT    { printf("%d", $1);                              $$ = IntFactor  ($1);              }
              | FLOATCT  { printf("%e", $1);                              $$ = FloatFactor($1);              }
              | CHARCT   { printReadableChar($1);                         $$ = CharFactor ($1);            }
@@ -1349,5 +1350,18 @@ infoexpressao NegOpFactor(int tid, operando opnd)
 infoexpressao FactorType (infoexpressao expression)
 {
   return expression;
+}
+
+infoexpressao VariableFactor  (infovariavel infovar)
+{
+  infoexpressao infoexpr;
+
+  infoexpr.opnd = infovar.opnd;
+
+  if (infovar.simb != NULL) {
+    infoexpr.tipo = infovar.simb->tvar;
+  }
+
+  return infoexpr;
 }
 
