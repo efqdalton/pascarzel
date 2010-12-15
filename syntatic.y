@@ -479,33 +479,33 @@ ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              ;
 AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2, $6); }
              ;
-Expression   : AuxExpr1 { $$ = $1; }
-             | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
+Expression   : AuxExpr1 { $$.tipo = $1.tipo; }
+             | Expression OROP { printf(" || "); } AuxExpr1 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
              ;
-AuxExpr1     : AuxExpr2 { $$ = $1; }
-             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$ = CheckLogop($1, $2, $4); }
+AuxExpr1     : AuxExpr2 { $$.tipo = $1.tipo; }
+             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
              ;
-AuxExpr2     : AuxExpr3 { $$ = $1; }
-             | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3); }
+AuxExpr2     : AuxExpr3 { $$.tipo = $1.tipo; }
+             | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3.tipo); }
              ;
-AuxExpr3     : AuxExpr4 { $$ = $1; }
-             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$ = CheckRelop($1, $2, $4); }
+AuxExpr3     : AuxExpr4 { $$.tipo = $1.tipo; }
+             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$.tipo = CheckRelop($1.tipo, $2, $4.tipo); }
              ;
-AuxExpr4     : Term { $$ = $1; }
-             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
+AuxExpr4     : Term { $$.tipo = $1.tipo; }
+             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$.tipo = CheckAdop($1.tipo, $2, $4.tipo); }
              ;
 Term         : Factor { $$ = $1; }
-             | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
+             | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$.tipo = CheckMult($1.tipo, $2, $4.tipo); }
              ;
-Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1->ref  =  VERDADE; $$ = $1->tvar; } }
-             | INTCT    { printf("%d", $1);                              $$ = INTEIRO;                  }
-             | FLOATCT  { printf("%e", $1);                              $$ = REAL;                     }
-             | CHARCT   { printReadableChar($1);                         $$ = CARACTERE;                }
-             | TRUE     { printf("true");                                $$ = LOGICO;                   }
-             | FALSE    { printf("false");                               $$ = LOGICO;                   }
-             | NEGOP    { printf("~"); } Factor {                        $$ = CheckNegop($3);           }
-             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = $3;                       }
-             | FuncCall {                                                $$ = CheckFuncCall($1);        }
+Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1.simb->ref = VERDADE; $$.simb = $1.simb->tvar; } }
+             | INTCT    { printf("%d", $1);                              $$.tipo = INTEIRO;                          }
+             | FLOATCT  { printf("%e", $1);                              $$.tipo = REAL;                             }
+             | CHARCT   { printReadableChar($1);                         $$.tipo = CARACTERE;                        }
+             | TRUE     { printf("true");                                $$.tipo = LOGICO;                           }
+             | FALSE    { printf("false");                               $$.tipo = LOGICO;                           }
+             | NEGOP    { printf("~"); } Factor {                        $$.tipo = CheckNegop($3.tipo);              }
+             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$.tipo = $3.tipo;                          }
+             | FuncCall {                                                $$.tipo = CheckFuncCall($1.tipo);           }
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; CheckVariable($$, $3); }
              ;
