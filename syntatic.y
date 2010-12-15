@@ -369,7 +369,7 @@ void      RenumQuadruplas (quadrupla, quadrupla);
 
 /* Producoes da gramatica */
 
-Prog         : { InicTabSimb(); InicProg(); } GlobDecls FuncList MainDef { FimProg(); ImprimeTabSimb(); }
+Prog         : { InicTabSimb(); InicCodIntermed(); InicProg(); } GlobDecls FuncList MainDef { FimProg(); ImprimeTabSimb(); ImprimeQuadruplas(); }
              ;
 GlobDecls    :
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
@@ -530,6 +530,8 @@ void InicProg()
   escopo = simb = InsereSimb("##global", IDGLOB, NAOVAR, NULL);
   pontvardecl = simb->listvar;
   pontfunc = simb->listfunc;
+
+  numtemp = 0;
 }
 
 /* To be called after end of program */
@@ -544,6 +546,12 @@ void InicFunc(char *id)
   escopo = simb = InsereSimb(id, IDFUNC, tipocorrente, escopo);
   pontvardecl = simb -> listvar;
   pontparam = simb -> listparam;
+
+  InicCodIntermFunc(simb);
+  operando opnd;
+  opnd.tipo = FUNCOPND;
+  opnd.atr.func = funccorrente;
+  GeraQuadrupla(OPENMOD, opnd, opndidle, opndidle);
 }
 
 void FimFunc()
