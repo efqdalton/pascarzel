@@ -236,7 +236,7 @@ int             CheckFuncCall(char *id);
 infoexpressao   CheckMult(infoexpressao, int, infoexpressao);
 infoexpressao   CheckAdop(infoexpressao, int, infoexpressao);
 infoexpressao   CheckRelop(infoexpressao, int, infoexpressao);
-int             CheckLogop(int, int, int);
+infoexpressao   CheckLogop(infoexpressao, int, infoexpressao);
 infoexpressao   CheckNotop(infoexpressao);
 void            CheckAssign(simbolo, int);
 void            CheckLogic(int);
@@ -488,10 +488,10 @@ ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
 AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); }
              ;
 Expression   : AuxExpr1 { $$ = $1; }
-             | Expression OROP { printf(" || "); } AuxExpr1 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
+             | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
              ;
 AuxExpr1     : AuxExpr2 { $$ = $1; }
-             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
+             | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$ = CheckLogop($1, $2, $4); }
              ;
 AuxExpr2     : AuxExpr3 { $$ = $1; }
              | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3); }
@@ -1090,11 +1090,25 @@ infoexpressao CheckRelop(infoexpressao expr1, int op, infoexpressao expr2){
   return res;
 }
 
-int CheckLogop(int expr1, int op, int expr2){
-  if(expr1 != expr2)
-    OperandosImproprioAosOperadoresLogicos();
+infoexpressao CheckLogop(infoexpressao expr1, int op, infoexpressao expr2){
+  infoexpressao res;
 
-  return LOGICO;
+  if(expr1.tipo != LOGICO || expr2.tipo != LOGICO) OperandosImproprioAosOperadoresLogicos();
+
+  res.tipo          = LOGICO;
+  res.opnd.tipo     = VAROPND;
+  res.opnd.atr.simb = NovaTemp(res.tipo);
+
+  switch(op) {
+    case AND:
+      GeraQuadrupla(OPAND, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+    case OR:
+      GeraQuadrupla(OPOR, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+  }
+
+  return res;
 }
 
 infoexpressao CheckNotop(infoexpressao expr){

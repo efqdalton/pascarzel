@@ -1,8 +1,9 @@
 main 
   local {
-    a, b : int;
-    c    : float;
-    l    : logic;
+    a, b    : int;
+    c       : float;
+    l, m, n : logic;
+    
   }
   statements {
     a := 1;
@@ -13,11 +14,12 @@ main
     c := a / b;
     c := a % b;
     c := ~ a;
-    l := a > b;
-    l := a < c;
+    n := a > b;
+    m := a < c;
     l := a = b;
     l := a != b;
     l := c <= a;
     l := b >= a;
     l := !l;
+    l := l && m || n;
   }
