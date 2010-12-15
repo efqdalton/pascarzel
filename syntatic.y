@@ -113,6 +113,7 @@ simbolo tabsimb[NCLASSHASH];
 simbolo simb;
 listasimbolo listsimb;
 int tipocorrente;
+int arraycorrente, arraydim, arraydimcorrente[10];
 short declparam;
 simbolo escopo;
 listasimbolo pontvardecl;
@@ -276,8 +277,8 @@ Declaration  : { printTabs(); InicDeclaration(); } IdList { printf(" : "); } COL
 IdList       : ID              { declareVariable($1); printf("%s", $1); }
              | IdList COMMA ID { declareVariable($3); printf(", %s", $3); }
              ;
-Type         : ScalarType
-             | ArrayType
+Type         : { arraycorrente = FALSO; } ScalarType
+             | { arraycorrente = VERDADE; arraydim = 0; } ArrayType {}
              ;
 ScalarType   : INT   { printf("int");   tipocorrente = INTEIRO;   }
              | FLOAT { printf("float"); tipocorrente = REAL;      }
@@ -287,7 +288,7 @@ ScalarType   : INT   { printf("int");   tipocorrente = INTEIRO;   }
              ;
 ArrayType    : ARRAY OPBRAK { printf("array ["); } DimList CLBRAK OF { printf("] of "); } ScalarType
              ;
-DimList      : INTCT               { printf("%d", $1); validateVectorSize($1); }
+DimList      : INTCT               { printf("%d", $1);   validateVectorSize($1); }
              | DimList COMMA INTCT { printf(", %d", $3); validateVectorSize($3); }
              ;
 FuncList     :
@@ -485,6 +486,8 @@ void declareVariable(char *variable){
 
 void validateVectorSize(int n){
   if(n <= 0) TamanhoInvalidoDeVetor(n);
+  arraydim++;
+  arraydimcorrente[arraydim] = n;
 }
 
 void validateVariableType(){
@@ -667,10 +670,18 @@ infolistexpr ConcatListExpr(infolistexpr l1, infolistexpr l2)
 }
 
 /* AdicTipoVar: Coloca o tipo de variavel corrente em todos os simbolos da lista de simbolos */
-void AdicTipoVar(listasimbolo listsimb) {
+void AdicTipoVar(listasimbolo listsimb){
+  int i;
   elemlistsimb *p;
   validateVariableType();
-  for(p=listsimb; p!=NULL; p = p->prox) p->simb->tvar = tipocorrente;
+  for(p=listsimb; p!=NULL; p = p->prox){
+    p->simb->tvar = tipocorrente;
+    if(arraycorrente){
+      p->simb->array = VERDADE;
+      p->simb->ndims = arraydim;
+      for(i = 1; i <= arraydim; i++) p->simb->dims[i] = arraydimcorrente[i];
+    }
+  }
 }
 
 infolistexpr EmptyInfoList() {
@@ -1007,5 +1018,5 @@ void SubscritoEsperado(){
 }
 
 void NumeroDeSubscritoIncompativel(){
-  addError("/* Foram aplicados mais sobresscritos do que o devido */\n");
+  addError("/* Foram aplicados mais sobrescritos do que o devido */\n");
 }
