@@ -485,7 +485,7 @@ ExprList     : Expression { $$ = InicListExpr($1.tipo); }
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
              ;
-AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); }
+AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); GeraQuadrupla(OPATRIB, $2.opnd, opndidle, $6.opnd); }
              ;
 Expression   : AuxExpr1 { $$ = $1; }
              | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
