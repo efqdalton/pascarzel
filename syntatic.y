@@ -224,22 +224,22 @@ int     hash(char *);
 simbolo ProcuraSimb(char *, simbolo);
 
 /* Protótipos para analisador semantico */
-void    declareVariable(char *);
-void    validateVectorSize(int);
-void    validateVariableType();
-void    VariableReferenced(simbolo s);
-void    VariableAssigned(simbolo s);
-simbolo UsarVariavel(char *name, int tid);
-void    VerificaInicRef();
-int     CheckNegop(int);
-int     CheckFuncCall(char *id);
-infoexpressao     CheckMult(infoexpressao, int, infoexpressao);
-int     CheckAdop(int, int, int);
-int     CheckRelop(int, int, int);
-int     CheckLogop(int, int, int);
-int     CheckNotop(int);
-void    CheckAssign(simbolo, int);
-void    CheckLogic(int);
+void            declareVariable(char *);
+void            validateVectorSize(int);
+void            validateVariableType();
+void            VariableReferenced(simbolo s);
+void            VariableAssigned(simbolo s);
+simbolo         UsarVariavel(char *name, int tid);
+void            VerificaInicRef();
+int             CheckNegop(int);
+int             CheckFuncCall(char *id);
+infoexpressao   CheckMult(infoexpressao, int, infoexpressao);
+infoexpressao   CheckAdop(infoexpressao, int, infoexpressao);
+int             CheckRelop(int, int, int);
+int             CheckLogop(int, int, int);
+int             CheckNotop(int);
+void            CheckAssign(simbolo, int);
+void            CheckLogic(int);
 infovariavel    CheckVariable(simbolo, int);
 
 /* Protótipos de errors */
@@ -500,7 +500,7 @@ AuxExpr3     : AuxExpr4 { $$ = $1; }
              | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$.tipo = CheckRelop($1.tipo, $2, $4.tipo); }
              ;
 AuxExpr4     : Term { $$ = $1;} 
-             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$.tipo = CheckAdop($1.tipo, $2, $4.tipo); }
+             | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
              ;
 Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
@@ -1018,12 +1018,28 @@ infoexpressao CheckMult(infoexpressao term, int op, infoexpressao factor){
   return res;
 }
 
-int CheckAdop(int term, int op, int factor){
-  if( (term != INTEIRO && term != REAL && term != CARACTERE) || (factor != INTEIRO && factor != REAL && factor != CARACTERE) )
+infoexpressao CheckAdop(infoexpressao term, int op, infoexpressao factor){
+  infoexpressao res;
+
+  if( (term.tipo != INTEIRO && term.tipo != REAL && term.tipo != CARACTERE) || (factor.tipo != INTEIRO && factor.tipo != REAL && factor.tipo != CARACTERE) )
     OperandoNaoAritmetico();
 
-  if(term == REAL || factor == REAL) return REAL;
-  else return INTEIRO;
+  if(term.tipo == REAL || factor.tipo == REAL) res.tipo = REAL;
+  else res.tipo = INTEIRO;
+
+  res.opnd.tipo = VAROPND;
+  res.opnd.atr.simb = NovaTemp(res.tipo);
+
+  switch (op) {
+    case MAIS:
+      GeraQuadrupla(OPMAIS, term.opnd, factor.opnd, res.opnd);
+      break;
+    case MENOS:
+      GeraQuadrupla(OPMENOS, term.opnd, factor.opnd, res.opnd);
+      break;
+  }
+
+  return res;
 }
 
 int CheckRelop(int expr1, int op, int expr2){
