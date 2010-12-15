@@ -235,9 +235,9 @@ int             CheckNegop(infoexpressao);
 int             CheckFuncCall(char *id);
 infoexpressao   CheckMult(infoexpressao, int, infoexpressao);
 infoexpressao   CheckAdop(infoexpressao, int, infoexpressao);
-int             CheckRelop(int, int, int);
+infoexpressao   CheckRelop(infoexpressao, int, infoexpressao);
 int             CheckLogop(int, int, int);
-int             CheckNotop(int);
+infoexpressao   CheckNotop(infoexpressao);
 void            CheckAssign(simbolo, int);
 void            CheckLogic(int);
 infovariavel    CheckVariable(simbolo, int);
@@ -494,10 +494,10 @@ AuxExpr1     : AuxExpr2 { $$ = $1; }
              | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
              ;
 AuxExpr2     : AuxExpr3 { $$ = $1; }
-             | NOTOP { printf("!"); } AuxExpr3 { $$.tipo = CheckNotop($3.tipo); }
+             | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3); }
              ;
 AuxExpr3     : AuxExpr4 { $$ = $1; }
-             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$.tipo = CheckRelop($1.tipo, $2, $4.tipo); }
+             | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$ = CheckRelop($1, $2, $4); }
              ;
 AuxExpr4     : Term { $$ = $1;} 
              | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
@@ -1042,12 +1042,52 @@ infoexpressao CheckAdop(infoexpressao term, int op, infoexpressao factor){
   return res;
 }
 
-int CheckRelop(int expr1, int op, int expr2){
-  if( (op == EQ || op == NE) && expr1 == LOGICO && expr2 == LOGICO ) return LOGICO;
-  if( (expr1 != INTEIRO && expr1 != REAL && expr1 != CARACTERE) || (expr2 != INTEIRO && expr2 != REAL && expr2 != CARACTERE) )
-    { OperandoNaoComparavel(); printf("/* expr1 = %d expr2 = %d */", expr1, expr2); }
+infoexpressao CheckRelop(infoexpressao expr1, int op, infoexpressao expr2){
+  infoexpressao res;
 
-  return LOGICO;
+  res.tipo          = LOGICO;
+  res.opnd.tipo     = VAROPND;
+  res.opnd.atr.simb = NovaTemp(res.tipo);
+
+  if( (op == EQ || op == NE) && expr1.tipo == LOGICO && expr2.tipo == LOGICO ){
+    switch(op) {
+      case EQ:
+        GeraQuadrupla(OPEQ, expr1.opnd, expr2.opnd, res.opnd);
+        break;
+      case NE:
+        GeraQuadrupla(OPNE, expr1.opnd, expr2.opnd, res.opnd);
+        break;
+    }
+    return res;
+  }
+
+  if( (expr1.tipo != INTEIRO && expr1.tipo != REAL && expr1.tipo != CARACTERE) || (expr2.tipo != INTEIRO && expr2.tipo != REAL && expr2.tipo != CARACTERE) ){
+    OperandoNaoComparavel();
+    printf("/* expr1 = %d expr2 = %d */", expr1.tipo, expr2.tipo);
+  }
+
+  switch(op) {
+    case EQ:
+      GeraQuadrupla(OPEQ, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+    case NE:
+      GeraQuadrupla(OPNE, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+    case GE:
+      GeraQuadrupla(OPGE, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+    case GT:
+      GeraQuadrupla(OPGT, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+    case LE:
+      GeraQuadrupla(OPLE, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+    case LT:
+      GeraQuadrupla(OPLT, expr1.opnd, expr2.opnd, res.opnd);
+      break;
+  }
+
+  return res;
 }
 
 int CheckLogop(int expr1, int op, int expr2){
@@ -1057,11 +1097,17 @@ int CheckLogop(int expr1, int op, int expr2){
   return LOGICO;
 }
 
-int CheckNotop(int expr){
-  if(expr != LOGICO)
-    OperandoNaoNegavel();
+infoexpressao CheckNotop(infoexpressao expr){
+  infoexpressao res;
 
-  return LOGICO;
+  if(expr.tipo != LOGICO) OperandoNaoNegavel();
+
+  res.tipo          = LOGICO;
+  res.opnd.tipo     = VAROPND;
+  res.opnd.atr.simb = NovaTemp(res.tipo);
+  GeraQuadrupla(OPNOT, expr.opnd, opndidle, res.opnd);
+
+  return res;
 }
 
 void CheckAssign(simbolo variable, int expr_type){
