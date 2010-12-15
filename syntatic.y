@@ -231,6 +231,12 @@ void    SubscritoEsperado();
 void    NumeroDeSubscritoIncompativel();
 
 /* Declaracoes para a estrutura do codigo intermediario */
+typedef struct infoexpressao infoexpressao;
+struct infoexpressao { int tipo;  operando opnd; };
+
+typedef struct infovariavel infovariavel;
+struct infovariavel { simbolo simb; operando opnd; };
+
 typedef union atribopnd atribopnd;
 typedef struct operando operando;
 typedef struct celquad celquad;
@@ -287,19 +293,20 @@ void      RenumQuadruplas (quadrupla, quadrupla);
   char    carac;
   simbolo simb;
   int     nsubscr;
+  infoexpressao infoexpr;	  infovariavel infovar;
   infolistexpr infolexpr;
 }
 
 /* Declaracao dos tipos retornados pelas producoes */
-%type     <valint>    AuxExpr1
-%type     <valint>    AuxExpr2
-%type     <valint>    AuxExpr3
-%type     <valint>    AuxExpr4
-%type     <simb>      Variable
-%type     <valint>    Expression
-%type     <valint>    Factor
+%type     <infoexpr>  AuxExpr1
+%type     <infoexpr>  AuxExpr2
+%type     <infoexpr>  AuxExpr3
+%type     <infoexpr>  AuxExpr4
+%type     <infovar>   Variable
+%type     <infoexpr>  Expression
+%type     <infoexpr>  Factor
 %type     <cadeia>    FuncCall
-%type     <valint>    Term
+%type     <infoexpr>  Term
 %type     <infolexpr> ExprList Arguments
 %type     <nsubscr>   Subscripts SubscrList
 
