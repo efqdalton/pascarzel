@@ -233,14 +233,14 @@ simbolo UsarVariavel(char *name, int tid);
 void    VerificaInicRef();
 int     CheckNegop(int);
 int     CheckFuncCall(char *id);
-int     CheckMult(int, int, int);
+infoexpressao     CheckMult(infoexpressao, int, infoexpressao);
 int     CheckAdop(int, int, int);
 int     CheckRelop(int, int, int);
 int     CheckLogop(int, int, int);
 int     CheckNotop(int);
 void    CheckAssign(simbolo, int);
 void    CheckLogic(int);
-void    CheckVariable(infovariavel *, int);
+infovariavel    CheckVariable(simbolo, int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -281,12 +281,12 @@ simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
 
 
-void SetIntFactor  (infoexpressao *infoexpr, int value);
-void SetFloatFactor(infoexpressao *infoexpr, float value);
-void SetCharFactor (infoexpressao *infoexpr, char value);
-void SetBoolFactor (infoexpressao *infoexpr, int value);
-void SetNegOpFactor(infoexpressao *infoexpr, int tid, operando opnd);
-void SetFactorType (infoexpressao *infoexpr, infoexpressao expression);
+infoexpressao IntFactor  (int value);
+infoexpressao FloatFactor(float value);
+infoexpressao CharFactor (char value);
+infoexpressao BoolFactor (int value);
+infoexpressao NegOpFactor(int tid, operando opnd);
+infoexpressao FactorType (infoexpressao expression);
 
 %}
 
@@ -487,35 +487,35 @@ ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              ;
 AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); }
              ;
-Expression   : AuxExpr1 { $$.tipo = $1.tipo; }
+Expression   : AuxExpr1 { $$ = $1; }
              | Expression OROP { printf(" || "); } AuxExpr1 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
              ;
-AuxExpr1     : AuxExpr2 { $$.tipo = $1.tipo; }
+AuxExpr1     : AuxExpr2 { $$ = $1; }
              | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
              ;
-AuxExpr2     : AuxExpr3 { $$.tipo = $1.tipo; }
+AuxExpr2     : AuxExpr3 { $$ = $1; }
              | NOTOP { printf("!"); } AuxExpr3 { $$.tipo = CheckNotop($3.tipo); }
              ;
-AuxExpr3     : AuxExpr4 { $$.tipo = $1.tipo; }
+AuxExpr3     : AuxExpr4 { $$ = $1; }
              | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$.tipo = CheckRelop($1.tipo, $2, $4.tipo); }
              ;
-AuxExpr4     : Term { $$.tipo = $1.tipo; }
+AuxExpr4     : Term { $$ = $1;} 
              | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$.tipo = CheckAdop($1.tipo, $2, $4.tipo); }
              ;
 Term         : Factor { $$ = $1; }
-             | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$.tipo = CheckMult($1.tipo, $2, $4.tipo); }
+             | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
              ;
-Factor       : Variable { VariableReferenced($1.simb);                   if ($1.simb != NULL) $$.tipo = $1.simb->tvar;                    }
-             | INTCT    { printf("%d", $1);                              SetIntFactor  (&$$, $1);              }
-             | FLOATCT  { printf("%e", $1);                              SetFloatFactor(&$$, $1);              }
-             | CHARCT   { printReadableChar($1);                         SetCharFactor (&$$, $1);              }
-             | TRUE     { printf("true");                                SetBoolFactor (&$$, VERDADE);              }
-             | FALSE    { printf("false");                               SetBoolFactor (&$$, FALSO);              }
-             | NEGOP    { printf("~"); } Factor {                        SetNegOpFactor(&$$, CheckNegop($3.tipo), $3.opnd);              }
-             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); SetFactorType (&$$, $3);              }
+Factor       : Variable { VariableReferenced($1.simb);                   if ($1.simb != NULL) $$.tipo = $1.simb->tvar;             }
+             | INTCT    { printf("%d", $1);                              $$ = IntFactor  ($1);              }
+             | FLOATCT  { printf("%e", $1);                              $$ = FloatFactor($1);              }
+             | CHARCT   { printReadableChar($1);                         $$ = CharFactor ($1);            }
+             | TRUE     { printf("true");                                $$ = BoolFactor (VERDADE);              }
+             | FALSE    { printf("false");                               $$ = BoolFactor (FALSO);              }
+             | NEGOP    { printf("~"); } Factor {                        $$ = NegOpFactor(CheckNegop($3.tipo), $3.opnd);              }
+             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = FactorType ($3);              }
              | FuncCall {                                                $$.tipo = CheckFuncCall($1);                }
              ;
-Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$.simb = $<simb>2; CheckVariable(&$$, $3); }
+Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = CheckVariable($<simb>2, $3); }
              ;
 Subscripts   : {$$ = 0;}
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); $$ = $3; }
@@ -981,20 +981,41 @@ int CheckFuncCall(char *id){
   return s->tvar;
 }
 
-int CheckMult(int term, int op, int factor){
+infoexpressao CheckMult(infoexpressao term, int op, infoexpressao factor){
+  infoexpressao res;
   switch(op) {
     case MULT:
     case DIV:
-      if( (term != INTEIRO && term != REAL && term != CARACTERE) || (factor != INTEIRO && factor != REAL && factor != CARACTERE) )
+      if( (term.tipo != INTEIRO && term.tipo != REAL && term.tipo != CARACTERE) || (factor.tipo != INTEIRO && factor.tipo != REAL && factor.tipo != CARACTERE) )
         OperandoNaoAritmetico();
 
-      if(term == REAL || factor == REAL) return REAL;
-      else return INTEIRO;
+      if(term.tipo == REAL || factor.tipo == REAL) res.tipo = REAL;
+      else res.tipo = INTEIRO;
+
+      res.opnd.tipo = VAROPND;
+      res.opnd.atr.simb = NovaTemp(res.tipo);
+
+      switch (op) {
+        case MULT:
+          GeraQuadrupla(OPMULT, term.opnd, factor.opnd, res.opnd);
+          break;
+        case DIV:
+          GeraQuadrupla(OPDIV, term.opnd, factor.opnd, res.opnd);
+          break;
+      }
+      break;
+
     case RESTO:
-      if(term != INTEIRO && term != CARACTERE || factor != INTEIRO && factor != CARACTERE)
+      if(term.tipo != INTEIRO && term.tipo != CARACTERE || factor.tipo != INTEIRO && factor.tipo != CARACTERE)
         OperandoInvalidoAoResto();
-      return INTEIRO;
-    }
+      res.tipo = INTEIRO;
+      res.opnd.tipo = VAROPND;
+      res.opnd.atr.simb = NovaTemp(res.tipo);
+      GeraQuadrupla(OPRESTO, term.opnd, factor.opnd, res.opnd);
+      break;
+
+  }
+  return res;
 }
 
 int CheckAdop(int term, int op, int factor){
@@ -1008,7 +1029,7 @@ int CheckAdop(int term, int op, int factor){
 int CheckRelop(int expr1, int op, int expr2){
   if( (op == EQ || op == NE) && expr1 == LOGICO && expr2 == LOGICO ) return LOGICO;
   if( (expr1 != INTEIRO && expr1 != REAL && expr1 != CARACTERE) || (expr2 != INTEIRO && expr2 != REAL && expr2 != CARACTERE) )
-    { OperandoNaoComparavel(); }
+    { OperandoNaoComparavel(); printf("/* expr1 = %d expr2 = %d */", expr1, expr2); }
 
   return LOGICO;
 }
@@ -1049,13 +1070,19 @@ void CheckLogic(int type){
   if(type != LOGICO) ExpressaoDeveriaSerLogica();
 }
 
-void CheckVariable(infovariavel *infoexpr, int index){
-  simbolo simb = infoexpr->simb;
-  if (simb == NULL) return;
+infovariavel CheckVariable(simbolo simb, int index){
+  infovariavel infoexpr;
+
+  infoexpr.simb = simb;
+
+  if (simb == NULL) {
+    return infoexpr;
+  }
+
   if(simb->array == FALSO){
     if(index != 0) SubscritoNaoEsperado();
-    infoexpr->opnd.tipo = VAROPND;
-    infoexpr->opnd.atr.simb = simb;
+    infoexpr.opnd.tipo = VAROPND;
+    infoexpr.opnd.atr.simb = simb;
   }else{
     if(index == 0){
       SubscritoEsperado();
@@ -1064,6 +1091,8 @@ void CheckVariable(infovariavel *infoexpr, int index){
         NumeroDeSubscritoIncompativel();
     }
   }
+
+  return infoexpr;
 }
 
 /*  Erros semanticos  */
@@ -1262,43 +1291,63 @@ void RenumQuadruplas(quadrupla quad1, quadrupla quad2){
   }
 }
 
-void SetIntFactor  (infoexpressao *infoexpr, int value)
+infoexpressao IntFactor  (int value)
 {
-  infoexpr->tipo = INTEIRO;
-  infoexpr->opnd.tipo = INTOPND;
-  infoexpr->opnd.atr.valint = value;
+  infoexpressao infoexpr;
+
+  infoexpr.tipo = INTEIRO;
+  infoexpr.opnd.tipo = INTOPND;
+  infoexpr.opnd.atr.valint = value;
+
+  return infoexpr;
 }
 
-void SetFloatFactor(infoexpressao *infoexpr, float value)
+infoexpressao FloatFactor(float value)
 {
-  infoexpr->tipo = REAL;
-  infoexpr->opnd.tipo = REALOPND;
-  infoexpr->opnd.atr.valfloat = value;
+  infoexpressao infoexpr;
+
+  infoexpr.tipo = REAL;
+  infoexpr.opnd.tipo = REALOPND;
+  infoexpr.opnd.atr.valfloat = value;
+
+  return infoexpr;
 }
 
-void SetCharFactor (infoexpressao *infoexpr, char value)
+infoexpressao CharFactor (char value)
 {
-  infoexpr->tipo = CHAR;
-  infoexpr->opnd.tipo = CHAROPND;
-  infoexpr->opnd.atr.valchar = value;
+  infoexpressao infoexpr;
+
+  infoexpr.tipo = CARACTERE;
+  infoexpr.opnd.tipo = CHAROPND;
+  infoexpr.opnd.atr.valchar = value;
+
+  return infoexpr;
 }
 
-void SetBoolFactor (infoexpressao *infoexpr, int value)
+infoexpressao BoolFactor (int value)
 {
-  infoexpr->tipo = LOGICO;
-  infoexpr->opnd.tipo = LOGICOPND;
-  infoexpr->opnd.atr.vallogic = value;
+  infoexpressao infoexpr;
+
+  infoexpr.tipo = LOGICO;
+  infoexpr.opnd.tipo = LOGICOPND;
+  infoexpr.opnd.atr.vallogic = value;
+
+  return infoexpr;
 }
 
-void SetNegOpFactor(infoexpressao *infoexpr, int tid, operando opnd)
+infoexpressao NegOpFactor(int tid, operando opnd)
 {
-  infoexpr->opnd.tipo = VAROPND;
-  infoexpr->opnd.atr.simb = NovaTemp(tid);
-  GeraQuadrupla(OPMENUN, opnd, opndidle, infoexpr->opnd);
+  infoexpressao infoexpr;
+
+  infoexpr.opnd.tipo = VAROPND;
+  infoexpr.opnd.atr.simb = NovaTemp(tid);
+  GeraQuadrupla(OPMENUN, opnd, opndidle, infoexpr.opnd);
+
+  return infoexpr;
 }
 
-void SetFactorType (infoexpressao *infoexpr, infoexpressao expression)
+infoexpressao FactorType (infoexpressao expression)
 {
-  *infoexpr = expression;
+  return expression;
 }
 
