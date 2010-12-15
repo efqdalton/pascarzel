@@ -7,13 +7,13 @@ int hasErrors = 0;
 void addError(char *buff, ...){
   va_list arglist;
   va_start(arglist, buff);
-  vfprintf(stderr, buff, arglist);
+  vfprintf(stdout, buff, arglist);
   hasErrors = 1;       
   va_end(arglist);
 }
 
 int main(){
   yyparse();
-  if(!hasErrors) fprintf(stderr, "/* Sintaticamente correto! */\n");
+  if(!hasErrors) fprintf(stdout, "/* Sintaticamente correto! */\n");
   return 0;
 }
