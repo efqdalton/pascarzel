@@ -1,5 +1,5 @@
 default: doc.pdf
-doc.tex:
+doc.tex: doc.rst
 	rst2latex doc.rst > doc.tex
 
 doc.pdf: doc.tex
