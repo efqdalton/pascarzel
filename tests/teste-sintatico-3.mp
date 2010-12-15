@@ -32,6 +32,6 @@ statements
     read (x[2]);
     read (x[3]);
     write ( "O maior eh o ", maior(x[0], x[1], x[2]), "o." );
-    call maior(x[2]);
+    call maior(x[2], x[1], x[0]);
 }
 
