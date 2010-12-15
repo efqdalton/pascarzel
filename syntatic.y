@@ -887,7 +887,7 @@ int CheckAdop(int term, int op, int factor){
 int CheckRelop(int expr1, int op, int expr2){
   if( (op == EQ || op == NE) && expr1 == LOGICO && expr2 == LOGICO ) return LOGICO;
   if( (expr1 != INTEIRO && expr1 != REAL && expr1 != CARACTERE) || (expr2 != INTEIRO && expr2 != REAL && expr2 != CARACTERE) )
-    { printf("::%d %d::", expr1, expr2); OperandoNaoComparavel(); }
+    { OperandoNaoComparavel(); }
 
   return LOGICO;
 }
