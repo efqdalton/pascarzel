@@ -442,7 +442,7 @@ WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf("
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
-ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" := "); VariableAssigned($3); } Expression Direcao Expression StepDef DO { printf(" do\n"); } Statement { decreaseTabSize(); }
+ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" := "); VariableAssigned($3.simb); } Expression Direcao Expression StepDef DO { printf(" do\n"); } Statement { decreaseTabSize(); }
              ;
 Direcao      : TO     { printf(" to "); }
              | DOWNTO { printf(" downto "); }
@@ -452,8 +452,8 @@ StepDef      : ;
              ;
 ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); }
              ;
-VarList      : Variable { VariableAssigned($1); }
-             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4); }
+VarList      : Variable { VariableAssigned($1.simb); }
+             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4.simb); }
              ;
 WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); }
              ;
@@ -471,13 +471,13 @@ FuncCall     : ID OPPAR { $<simb>$ = UsarVariavel($1, IDFUNC); printf("%s(", $1)
 Arguments    : { $$ = EmptyInfoList(); }
              | ExprList
              ;
-ExprList     : Expression { $$ = InicListExpr($1); }
-             | ExprList COMMA { printf(", "); } Expression { $$ = ConcatListExpr($1, InicListExpr($4)); }
+ExprList     : Expression { $$ = InicListExpr($1.tipo); }
+             | ExprList COMMA { printf(", "); } Expression { $$ = ConcatListExpr($1, InicListExpr($4.tipo)); }
              ;
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
              ;
-AssignStat   : { printTabs(); } Variable { VariableAssigned($2); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2, $6); }
+AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); }
              ;
 Expression   : AuxExpr1 { $$.tipo = $1.tipo; }
              | Expression OROP { printf(" || "); } AuxExpr1 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
@@ -486,7 +486,7 @@ AuxExpr1     : AuxExpr2 { $$.tipo = $1.tipo; }
              | AuxExpr1 ANDOP { printf(" && "); } AuxExpr2 { $$.tipo = CheckLogop($1.tipo, $2, $4.tipo); }
              ;
 AuxExpr2     : AuxExpr3 { $$.tipo = $1.tipo; }
-             | NOTOP { printf("!"); } AuxExpr3 { $$ = CheckNotop($3.tipo); }
+             | NOTOP { printf("!"); } AuxExpr3 { $$.tipo = CheckNotop($3.tipo); }
              ;
 AuxExpr3     : AuxExpr4 { $$.tipo = $1.tipo; }
              | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$.tipo = CheckRelop($1.tipo, $2, $4.tipo); }
@@ -497,7 +497,7 @@ AuxExpr4     : Term { $$.tipo = $1.tipo; }
 Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$.tipo = CheckMult($1.tipo, $2, $4.tipo); }
              ;
-Factor       : Variable { VariableReferenced($1.simb); if($1 != NULL){ $1.simb->ref = VERDADE; $$.simb = $1.simb->tvar; } }
+Factor       : Variable { VariableReferenced($1.simb);                   $$.tipo = $1.simb->tvar;                    }
              | INTCT    { printf("%d", $1);                              $$.tipo = INTEIRO;                          }
              | FLOATCT  { printf("%e", $1);                              $$.tipo = REAL;                             }
              | CHARCT   { printReadableChar($1);                         $$.tipo = CARACTERE;                        }
@@ -505,7 +505,7 @@ Factor       : Variable { VariableReferenced($1.simb); if($1 != NULL){ $1.simb->
              | FALSE    { printf("false");                               $$.tipo = LOGICO;                           }
              | NEGOP    { printf("~"); } Factor {                        $$.tipo = CheckNegop($3.tipo);              }
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$.tipo = $3.tipo;                          }
-             | FuncCall {                                                $$.tipo = CheckFuncCall($1.tipo);           }
+             | FuncCall {                                                $$.tipo = CheckFuncCall($1);                }
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$.simb = $<simb>2; CheckVariable($$.simb, $3); }
              ;
