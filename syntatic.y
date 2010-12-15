@@ -231,7 +231,7 @@ void            VariableReferenced(simbolo s);
 void            VariableAssigned(simbolo s);
 simbolo         UsarVariavel(char *name, int tid);
 void            VerificaInicRef();
-int             CheckNegop(int);
+int             CheckNegop(infoexpressao);
 int             CheckFuncCall(char *id);
 infoexpressao   CheckMult(infoexpressao, int, infoexpressao);
 infoexpressao   CheckAdop(infoexpressao, int, infoexpressao);
@@ -505,15 +505,15 @@ AuxExpr4     : Term { $$ = $1;}
 Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$ = CheckMult($1, $2, $4); }
              ;
-Factor       : Variable { VariableReferenced($1.simb);                   $$ = VariableFactor($1);             }
-             | INTCT    { printf("%d", $1);                              $$ = IntFactor  ($1);              }
-             | FLOATCT  { printf("%e", $1);                              $$ = FloatFactor($1);              }
-             | CHARCT   { printReadableChar($1);                         $$ = CharFactor ($1);            }
-             | TRUE     { printf("true");                                $$ = BoolFactor (VERDADE);              }
-             | FALSE    { printf("false");                               $$ = BoolFactor (FALSO);              }
-             | NEGOP    { printf("~"); } Factor {                        $$ = NegOpFactor(CheckNegop($3.tipo), $3.opnd);              }
-             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = FactorType ($3);              }
-             | FuncCall {                                                $$.tipo = CheckFuncCall($1);                }
+Factor       : Variable { VariableReferenced($1.simb);                   $$ = VariableFactor($1);                         }
+             | INTCT    { printf("%d", $1);                              $$ = IntFactor  ($1);                            }
+             | FLOATCT  { printf("%e", $1);                              $$ = FloatFactor($1);                            }
+             | CHARCT   { printReadableChar($1);                         $$ = CharFactor ($1);                            }
+             | TRUE     { printf("true");                                $$ = BoolFactor (VERDADE);                       }
+             | FALSE    { printf("false");                               $$ = BoolFactor (FALSO);                         }
+             | NEGOP    { printf("~"); } Factor {                        $$ = NegOpFactor(CheckNegop($3), $3.opnd);       }
+             | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = FactorType ($3);                            }
+             | FuncCall {                                                $$.tipo = CheckFuncCall($1);                     }
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = CheckVariable($<simb>2, $3); }
              ;
@@ -969,9 +969,9 @@ void ImprimeTabSimb() {
   }
 }
 
-int CheckNegop(int type){
-  if(type != INTEIRO && type != REAL && type != CARACTERE) OperadorInvalidoAoMenosUnario();
-  if (type == REAL) return REAL;
+int CheckNegop(infoexpressao elem){
+  if(elem.tipo != INTEIRO && elem.tipo != REAL && elem.tipo != CARACTERE) OperadorInvalidoAoMenosUnario();
+  if(elem.tipo == REAL) return REAL;
   return INTEIRO;
 }
 
@@ -1351,10 +1351,10 @@ infoexpressao BoolFactor (int value)
   return infoexpr;
 }
 
-infoexpressao NegOpFactor(int tid, operando opnd)
-{
+infoexpressao NegOpFactor(int tid, operando opnd){
   infoexpressao infoexpr;
 
+  infoexpr.tipo = tid;
   infoexpr.opnd.tipo = VAROPND;
   infoexpr.opnd.atr.simb = NovaTemp(tid);
   GeraQuadrupla(OPMENUN, opnd, opndidle, infoexpr.opnd);
