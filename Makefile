@@ -1,6 +1,6 @@
 # vim: ts=4 noet
 
-default: syntatic
+default: syntatic lab.zip
 
 lex.yy.c: lexical.l
 	flex lexical.l
@@ -18,6 +18,11 @@ test-syntatic: syntatic
 	done
 
 clean:
-	rm -f syntatic lex.yy.c y.tab.c
+	rm -f syntatic lex.yy.c y.tab.c lab.zip y.output output/*.mp
+	cd doc && make clean
 
+doc/doc.pdf:
+	cd doc && make doc.pdf
 
+lab.zip: doc/doc.pdf test-syntatic
+	zip lab.zip doc/doc.pdf lexical.l syntatic.y main.c yyerror.c Makefile tests/*.mp output/*.mp
