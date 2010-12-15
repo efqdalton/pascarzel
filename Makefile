@@ -8,7 +8,7 @@ lex.yy.c: lexical.l
 y.tab.c: syntatic.y
 	yacc --report state syntatic.y
 
-syntatic: lex.yy.c y.tab.c
+syntatic: lex.yy.c y.tab.c main.c yyerror.c
 	gcc -ggdb y.tab.c yyerror.c main.c -lfl -o syntatic
 
 test-syntatic: syntatic
