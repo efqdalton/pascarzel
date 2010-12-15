@@ -907,6 +907,7 @@ int CheckNotop(int expr){
 }
 
 void CheckAssign(simbolo variable, int expr_type){
+  if (variable == NULL) return;
   switch(variable->tvar){
     case INTEIRO:
     case CARACTERE:
@@ -928,6 +929,7 @@ void CheckLogic(int type){
 }
 
 void CheckVariable(simbolo simb, int index){
+  if (simb == NULL) return;
   if(simb->array == FALSO){
     if(index != 0) SubscritoNaoEsperado();
   }else{
