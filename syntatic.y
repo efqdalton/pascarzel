@@ -497,7 +497,7 @@ AuxExpr4     : Term { $$.tipo = $1.tipo; }
 Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$.tipo = CheckMult($1.tipo, $2, $4.tipo); }
              ;
-Factor       : Variable { VariableReferenced($1.simb);                   $$.tipo = $1.simb->tvar;                    }
+Factor       : Variable { VariableReferenced($1.simb);                   if ($1.simb != NULL) $$.tipo = $1.simb->tvar;                    }
              | INTCT    { printf("%d", $1);                              $$.tipo = INTEIRO;                          }
              | FLOATCT  { printf("%e", $1);                              $$.tipo = REAL;                             }
              | CHARCT   { printReadableChar($1);                         $$.tipo = CARACTERE;                        }
