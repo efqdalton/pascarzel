@@ -231,7 +231,6 @@ void    SubscritoEsperado();
 void    NumeroDeSubscritoIncompativel();
 
 /* Declaracoes para a estrutura do codigo intermediario */
-
 typedef union atribopnd atribopnd;
 typedef struct operando operando;
 typedef struct celquad celquad;
@@ -260,7 +259,6 @@ struct celfunchead {
 };
 
 /* Variaveis globais para o codigo intermediario */
-
 quadrupla quadcorrente, quadaux;
 funchead codintermed, funccorrente;
 int oper, numquadcorrente;
@@ -269,13 +267,12 @@ int numtemp;
 const operando opndidle = {IDLEOPND, 0};
 
 /* Prototipos das funcoes para o codigo intermediario */
-
-void InicCodIntermed (void);
-void InicCodIntermFunc (simbolo);
-void ImprimeQuadruplas (void);
+void      InicCodIntermed (void);
+void      InicCodIntermFunc (simbolo);
+void      ImprimeQuadruplas (void);
 quadrupla GeraQuadrupla (int, operando, operando, operando);
-simbolo NovaTemp (int);
-void RenumQuadruplas (quadrupla, quadrupla);
+simbolo   NovaTemp (int);
+void      RenumQuadruplas (quadrupla, quadrupla);
 
 %}
 
@@ -1123,51 +1120,51 @@ void NumeroDeSubscritoIncompativel(){
   addError("/* Foram aplicados mais sobrescritos do que o devido */\n");
 }
 
-/*
-  Funcoes para o codigo intermediario
- */
-
+/* Funcoes para o codigo intermediario */
 void InicCodIntermed () {
-  funccorrente = codintermed = malloc (sizeof (celfunchead));
+  funccorrente = codintermed = malloc(sizeof (celfunchead));
   funccorrente->prox = NULL;
 }
 
 void InicCodIntermFunc (simbolo simb) {
-  funccorrente->prox = malloc (sizeof (celfunchead));
-  funccorrente = funccorrente->prox;
-  funccorrente->prox = NULL;
+  funccorrente->prox     = malloc(sizeof (celfunchead));
+  funccorrente           = funccorrente->prox;
+  funccorrente->prox     = NULL;
   funccorrente->funcname = simb;
-  funccorrente->listquad = malloc (sizeof (celquad));
-  quadcorrente = funccorrente->listquad;
-  quadcorrente->prox = NULL;
-  numquadcorrente = 0;
-  quadcorrente->num = numquadcorrente;
+  funccorrente->listquad = malloc(sizeof (celquad));
+  quadcorrente           = funccorrente->listquad;
+  quadcorrente->prox     = NULL;
+  numquadcorrente        = 0;
+  quadcorrente->num      = numquadcorrente;
 }
 
 quadrupla GeraQuadrupla (int oper, operando opnd1, operando opnd2,
   operando result) {
-  quadcorrente->prox = malloc (sizeof (celquad));
-  quadcorrente = quadcorrente->prox;
-  quadcorrente->oper = oper;
-  quadcorrente->opnd1 = opnd1;
-  quadcorrente->opnd2 = opnd2;
+  quadcorrente->prox   = malloc(sizeof (celquad));
+  quadcorrente         = quadcorrente->prox;
+  quadcorrente->oper   = oper;
+  quadcorrente->opnd1  = opnd1;
+  quadcorrente->opnd2  = opnd2;
   quadcorrente->result = result;
-  quadcorrente->prox = NULL;
-  numquadcorrente ++;
-  quadcorrente->num = numquadcorrente;
+  quadcorrente->prox   = NULL;
+  numquadcorrente++;
+  quadcorrente->num    = numquadcorrente;
   return quadcorrente;
 }
 
 simbolo NovaTemp (int tip) {
-  simbolo simb; int temp, i, j;
+  simbolo simb;
+  int temp, i, j;
   char nometemp[10] = "##", s[10] = {0};
 
   numtemp ++; temp = numtemp;
   for (i = 0; temp > 0; temp /= 10, i++)
     s[i] = temp % 10 + '0';
+  
   i --;
   for (j = 0; j <= i; j++)
     nometemp[2+i-j] = s[j];
+  
   simb = InsereSimb (nometemp, IDVAR, tip, escopo);
    //simb->tvar = tip;
   simb->inic = simb->ref = VERDADE;
@@ -1178,60 +1175,61 @@ void ImprimeQuadruplas () {
   funchead p;
   quadrupla q;
   for (p = codintermed->prox; p != NULL; p = p->prox) {
-    printf ("\n\nQuadruplas da funcao %s:\n", p->funcname->cadeia);
+    printf("\n\nQuadruplas da funcao %s:\n", p->funcname->cadeia);
     for (q = p->listquad->prox; q != NULL; q = q->prox) {
-      printf ("\n\t%4d) %s", q->num, nomeoperquad[q->oper]);
-      printf (", (%s", nometipoopndquad[q->opnd1.tipo]);
+      printf("\n\t%4d) %s", q->num, nomeoperquad[q->oper]);
+      printf(", (%s", nometipoopndquad[q->opnd1.tipo]);
       switch (q->opnd1.tipo) {
         case IDLEOPND: break;
-        case VAROPND: printf (", %s", q->opnd1.atr.simb->cadeia); break;
-        case INTOPND: printf (", %d", q->opnd1.atr.valint); break;
-        case REALOPND: printf (", %g", q->opnd1.atr.valfloat); break;
-        case CHAROPND: printf (", %c", q->opnd1.atr.valchar); break;
-        case LOGICOPND: printf (", %d", q->opnd1.atr.vallogic); break;
-        case CADOPND: printf (", %s", q->opnd1.atr.valcad); break;
-        case ROTOPND: printf (", %d", q->opnd1.atr.rotulo->num); break;
-        case FUNCOPND: printf(", %s", q->opnd1.atr.func->funcname->cadeia);
+        case VAROPND:   printf(", %s", q->opnd1.atr.simb->cadeia); break;
+        case INTOPND:   printf(", %d", q->opnd1.atr.valint); break;
+        case REALOPND:  printf(", %g", q->opnd1.atr.valfloat); break;
+        case CHAROPND:  printf(", %c", q->opnd1.atr.valchar); break;
+        case LOGICOPND: printf(", %d", q->opnd1.atr.vallogic); break;
+        case CADOPND:   printf(", %s", q->opnd1.atr.valcad); break;
+        case ROTOPND:   printf(", %d", q->opnd1.atr.rotulo->num); break;
+        case FUNCOPND:  printf(", %s", q->opnd1.atr.func->funcname->cadeia);
           break;
       }
-      printf (")");
-      printf (", (%s", nometipoopndquad[q->opnd2.tipo]);
+      printf(")");
+      printf(", (%s", nometipoopndquad[q->opnd2.tipo]);
       switch (q->opnd2.tipo) {
         case IDLEOPND: break;
-        case VAROPND: printf (", %s", q->opnd2.atr.simb->cadeia); break;
-        case INTOPND: printf (", %d", q->opnd2.atr.valint); break;
-        case REALOPND: printf (", %g", q->opnd2.atr.valfloat); break;
-        case CHAROPND: printf (", %c", q->opnd2.atr.valchar); break;
-        case LOGICOPND: printf (", %d", q->opnd2.atr.vallogic); break;
-        case CADOPND: printf (", %s", q->opnd2.atr.valcad); break;
-        case ROTOPND: printf (", %d", q->opnd2.atr.rotulo->num); break;
-        case FUNCOPND: printf(", %s", q->opnd2.atr.func->funcname->cadeia);
+        case VAROPND:   printf(", %s", q->opnd2.atr.simb->cadeia); break;
+        case INTOPND:   printf(", %d", q->opnd2.atr.valint); break;
+        case REALOPND:  printf(", %g", q->opnd2.atr.valfloat); break;
+        case CHAROPND:  printf(", %c", q->opnd2.atr.valchar); break;
+        case LOGICOPND: printf(", %d", q->opnd2.atr.vallogic); break;
+        case CADOPND:   printf(", %s", q->opnd2.atr.valcad); break;
+        case ROTOPND:   printf(", %d", q->opnd2.atr.rotulo->num); break;
+        case FUNCOPND:  printf(", %s", q->opnd2.atr.func->funcname->cadeia);
           break;
       }
-      printf (")");
-      printf (", (%s", nometipoopndquad[q->result.tipo]);
+      printf(")");
+      printf(", (%s", nometipoopndquad[q->result.tipo]);
       switch (q->result.tipo) {
         case IDLEOPND: break;
-        case VAROPND: printf (", %s", q->result.atr.simb->cadeia); break;
-        case INTOPND: printf (", %d", q->result.atr.valint); break;
-        case REALOPND: printf (", %g", q->result.atr.valfloat); break;
-        case CHAROPND: printf (", %c", q->result.atr.valchar); break;
-        case LOGICOPND: printf (", %d", q->result.atr.vallogic); break;
-        case CADOPND: printf (", %s", q->result.atr.valcad); break;
-        case ROTOPND: printf (", %d", q->result.atr.rotulo->num); break;
-        case FUNCOPND: printf(", %s", q->result.atr.func->funcname->cadeia);
+        case VAROPND:   printf(", %s", q->result.atr.simb->cadeia); break;
+        case INTOPND:   printf(", %d", q->result.atr.valint); break;
+        case REALOPND:  printf(", %g", q->result.atr.valfloat); break;
+        case CHAROPND:  printf(", %c", q->result.atr.valchar); break;
+        case LOGICOPND: printf(", %d", q->result.atr.vallogic); break;
+        case CADOPND:   printf(", %s", q->result.atr.valcad); break;
+        case ROTOPND:   printf(", %d", q->result.atr.rotulo->num); break;
+        case FUNCOPND:  printf(", %s", q->result.atr.func->funcname->cadeia);
           break;
       }
-      printf (")");
+      printf(")");
     }
   }
-   printf ("\n");
+   printf("\n");
 }
 
-void RenumQuadruplas (quadrupla quad1, quadrupla quad2) {
-  quadrupla q; int nquad;
-  for (q = quad1->prox, nquad = quad1->num; q != quad2; q = q->prox) {
-      nquad++;
+void RenumQuadruplas(quadrupla quad1, quadrupla quad2){
+  quadrupla q;
+  int nquad;
+  for(q = quad1->prox, nquad = quad1->num; q != quad2; q = q->prox) {
+    nquad++;
     q->num = nquad;
   }
 }
