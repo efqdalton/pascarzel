@@ -18,8 +18,8 @@ main
     m := a < c;
     l := a = b;
     l := a != b;
-    l := c <= a;
-    l := b >= a;
+    if c <= a then
+      l := b >= a;
     l := !l;
     l := l && m || n;
   }

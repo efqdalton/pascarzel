@@ -181,7 +181,8 @@ struct operando {
 };
 
 struct celquad {
-  int num, oper; operando opnd1, opnd2, result;
+  int num, oper;
+  operando opnd1, opnd2, result;
   quadrupla prox;
 };
 
@@ -241,6 +242,7 @@ infoexpressao   CheckNotop(infoexpressao);
 void            CheckAssign(simbolo, int);
 void            CheckLogic(int);
 infovariavel    CheckVariable(simbolo, int);
+quadrupla       IfInic(infoexpressao);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -295,12 +297,13 @@ infoexpressao FactorType (infoexpressao expression);
 
 /* Definicao do tipo de yylval */
 %union {
-  char    cadeia[100];
-  int     atr, valint;
-  float   valreal;
-  char    carac;
-  simbolo simb;
-  int     nsubscr;
+  char      cadeia[100];
+  int       atr, valint;
+  float     valreal;
+  char      carac;
+  simbolo   simb;
+  int       nsubscr;
+  quadrupla quad;
   infoexpressao infoexpr;	  infovariavel infovar;
   infolistexpr infolexpr;
 }
@@ -441,7 +444,7 @@ Statement    : CompoundStat
              ;
 CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatList CLBRACE {  decreaseTabSize(); printIncreasingTabs("}\n"); }
              ;
-IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3.tipo); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
+IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3.tipo); /*$<quad>$ = IfInic($3);*/ increaseTabSize(); } Statement { decreaseTabSize(); /*$<quad>$->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle);*/ } ElseStat
              ;
 ElseStat     : ;
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
@@ -1271,8 +1274,7 @@ void InicCodIntermFunc (simbolo simb) {
   quadcorrente->num      = numquadcorrente;
 }
 
-quadrupla GeraQuadrupla (int oper, operando opnd1, operando opnd2,
-  operando result) {
+quadrupla GeraQuadrupla (int oper, operando opnd1, operando opnd2, operando result) {
   quadcorrente->prox   = malloc(sizeof (celquad));
   quadcorrente         = quadcorrente->prox;
   quadcorrente->oper   = oper;
@@ -1422,7 +1424,7 @@ infoexpressao NegOpFactor(int tid, operando opnd){
   return infoexpr;
 }
 
-infoexpressao FactorType (infoexpressao expression)
+infoexpressao FactorType(infoexpressao expression)
 {
   return expression;
 }
@@ -1438,5 +1440,10 @@ infoexpressao VariableFactor  (infovariavel infovar)
   }
 
   return infoexpr;
+}
+
+quadrupla IfInic(infoexpressao expr){
+  opndaux.tipo = ROTOPND;
+  return GeraQuadrupla(OPJF, expr.opnd, opndidle, opndaux);
 }
 
