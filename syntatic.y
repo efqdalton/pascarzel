@@ -231,12 +231,6 @@ void    SubscritoEsperado();
 void    NumeroDeSubscritoIncompativel();
 
 /* Declaracoes para a estrutura do codigo intermediario */
-typedef struct infoexpressao infoexpressao;
-struct infoexpressao { int tipo;  operando opnd; };
-
-typedef struct infovariavel infovariavel;
-struct infovariavel { simbolo simb; operando opnd; };
-
 typedef union atribopnd atribopnd;
 typedef struct operando operando;
 typedef struct celquad celquad;
@@ -263,6 +257,12 @@ struct celfunchead {
   simbolo funcname; funchead prox;
   quadrupla listquad;
 };
+
+typedef struct infoexpressao infoexpressao;
+struct infoexpressao { int tipo;  operando opnd; };
+
+typedef struct infovariavel infovariavel;
+struct infovariavel { simbolo simb; operando opnd; };
 
 /* Variaveis globais para o codigo intermediario */
 quadrupla quadcorrente, quadaux;
@@ -433,12 +433,12 @@ Statement    : CompoundStat
              ;
 CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatList CLBRACE {  decreaseTabSize(); printIncreasingTabs("}\n"); }
              ;
-IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
+IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3.tipo); increaseTabSize(); } Statement { decreaseTabSize(); } ElseStat
              ;
 ElseStat     : ;
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
              ;
-WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3); } Statement { decreaseTabSize(); }
+WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3.tipo); } Statement { decreaseTabSize(); }
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
@@ -497,7 +497,7 @@ AuxExpr4     : Term { $$.tipo = $1.tipo; }
 Term         : Factor { $$ = $1; }
              | Term MULTOP { printf("%s", translateOperator($2)); } Factor { $$.tipo = CheckMult($1.tipo, $2, $4.tipo); }
              ;
-Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1.simb->ref = VERDADE; $$.simb = $1.simb->tvar; } }
+Factor       : Variable { VariableReferenced($1.simb); if($1 != NULL){ $1.simb->ref = VERDADE; $$.simb = $1.simb->tvar; } }
              | INTCT    { printf("%d", $1);                              $$.tipo = INTEIRO;                          }
              | FLOATCT  { printf("%e", $1);                              $$.tipo = REAL;                             }
              | CHARCT   { printReadableChar($1);                         $$.tipo = CARACTERE;                        }
@@ -507,13 +507,13 @@ Factor       : Variable { VariableReferenced($1); if($1 != NULL){ $1.simb->ref =
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$.tipo = $3.tipo;                          }
              | FuncCall {                                                $$.tipo = CheckFuncCall($1.tipo);           }
              ;
-Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = $<simb>2; CheckVariable($$, $3); }
+Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$.simb = $<simb>2; CheckVariable($$.simb, $3); }
              ;
 Subscripts   : {$$ = 0;}
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); $$ = $3; }
              ;
-SubscrList   : AuxExpr4 { if($1 != INTEIRO && $1 != CARACTERE) TipoSubscritoInvalido(); $$ = 1; }
-             | SubscrList COMMA { printf(", "); } AuxExpr4 { if($4 != INTEIRO && $4 != CARACTERE) TipoSubscritoInvalido(); $$ = $1 + 1; }
+SubscrList   : AuxExpr4 { if($1.tipo != INTEIRO && $1.tipo != CARACTERE) TipoSubscritoInvalido(); $$ = 1; }
+             | SubscrList COMMA { printf(", "); } AuxExpr4 { if($4.tipo != INTEIRO && $4.tipo != CARACTERE) TipoSubscritoInvalido(); $$ = $1 + 1; }
              ;
 
 %%
