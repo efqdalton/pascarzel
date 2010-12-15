@@ -280,7 +280,6 @@ quadrupla GeraQuadrupla (int, operando, operando, operando);
 simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
 
-
 infoexpressao VariableFactor  (infovariavel infovar);
 infoexpressao IntFactor  (int value);
 infoexpressao FloatFactor(float value);
