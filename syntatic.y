@@ -162,6 +162,40 @@ infolistexpr EmptyInfoList();
 infolistexpr InicListExpr(int tid);
 infolistexpr ConcatListExpr(infolistexpr l1, infolistexpr l2);
 
+/* Declaracoes para a estrutura do codigo intermediario */
+typedef union atribopnd atribopnd;
+typedef struct operando operando;
+typedef struct celquad celquad;
+typedef celquad *quadrupla;
+typedef struct celfunchead celfunchead;
+typedef celfunchead *funchead;
+
+union atribopnd {
+  simbolo simb; int valint; float valfloat;
+  char valchar; char vallogic; char *valcad;
+  quadrupla rotulo; funchead func;
+};
+
+struct operando {
+  int tipo; atribopnd atr;
+};
+
+struct celquad {
+  int num, oper; operando opnd1, opnd2, result;
+  quadrupla prox;
+};
+
+struct celfunchead {
+  simbolo funcname; funchead prox;
+  quadrupla listquad;
+};
+
+typedef struct infoexpressao infoexpressao;
+struct infoexpressao { int tipo;  operando opnd; };
+
+typedef struct infovariavel infovariavel;
+struct infovariavel { simbolo simb; operando opnd; };
+
 /* Variaveis globais para a tabela de simbolos e analise semantica */
 simbolo tabsimb[NCLASSHASH];
 simbolo simb;
@@ -206,7 +240,7 @@ int     CheckLogop(int, int, int);
 int     CheckNotop(int);
 void    CheckAssign(simbolo, int);
 void    CheckLogic(int);
-void    CheckVariable(simbolo, int);
+void    CheckVariable(infovariavel, int);
 
 /* Protótipos de errors */
 void    DeclaracaoRepetida(char *s);
@@ -229,40 +263,6 @@ void    TipoSubscritoInvalido();
 void    SubscritoNaoEsperado();
 void    SubscritoEsperado();
 void    NumeroDeSubscritoIncompativel();
-
-/* Declaracoes para a estrutura do codigo intermediario */
-typedef union atribopnd atribopnd;
-typedef struct operando operando;
-typedef struct celquad celquad;
-typedef celquad *quadrupla;
-typedef struct celfunchead celfunchead;
-typedef celfunchead *funchead;
-
-union atribopnd {
-  simbolo simb; int valint; float valfloat;
-  char valchar; char vallogic; char *valcad;
-  quadrupla rotulo; funchead func;
-};
-
-struct operando {
-  int tipo; atribopnd atr;
-};
-
-struct celquad {
-  int num, oper; operando opnd1, opnd2, result;
-  quadrupla prox;
-};
-
-struct celfunchead {
-  simbolo funcname; funchead prox;
-  quadrupla listquad;
-};
-
-typedef struct infoexpressao infoexpressao;
-struct infoexpressao { int tipo;  operando opnd; };
-
-typedef struct infovariavel infovariavel;
-struct infovariavel { simbolo simb; operando opnd; };
 
 /* Variaveis globais para o codigo intermediario */
 quadrupla quadcorrente, quadaux;
@@ -507,7 +507,7 @@ Factor       : Variable { VariableReferenced($1.simb);                   $$.tipo
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$.tipo = $3.tipo;                          }
              | FuncCall {                                                $$.tipo = CheckFuncCall($1);                }
              ;
-Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$.simb = $<simb>2; CheckVariable($$.simb, $3); }
+Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$.simb = $<simb>2; CheckVariable($$, $3); }
              ;
 Subscripts   : {$$ = 0;}
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); $$ = $3; }
@@ -1041,7 +1041,8 @@ void CheckLogic(int type){
   if(type != LOGICO) ExpressaoDeveriaSerLogica();
 }
 
-void CheckVariable(simbolo simb, int index){
+void CheckVariable(infovariavel infoexpr, int index){
+  simbolo simb = infoexpr.simb;
   if (simb == NULL) return;
   if(simb->array == FALSO){
     if(index != 0) SubscritoNaoEsperado();
