@@ -448,11 +448,28 @@ CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatLi
 IfStat       : IF { printWithTabs("if "); } Expression THEN
                 { printf(" then\n"); CheckLogic($3.tipo); $<quad>$ = IfInic($3); increaseTabSize(); }
                 Statement
-                { decreaseTabSize(); $<quad>5->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle); }
+                { decreaseTabSize(); $<quad>$ = quadcorrente; $<quad>5->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle); }
                 ElseStat
+                { if($<quad>8->prox != quadcorrente){
+                    quadaux              = $<quad>8->prox;
+                    $<quad>8->prox       = quadaux->prox;
+                    quadaux->prox        = $<quad>8->prox->prox;
+                    $<quad>8->prox->prox = quadaux;
+                    RenumQuadruplas($<quad>8, quadcorrente); }
+                }
              ;
 ElseStat     :
-             | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
+             | ELSE
+               {
+                 printIncreasingTabs("else\n");
+                 opndaux.tipo = ROTOPND;
+                 $<quad>$ = GeraQuadrupla(OPJUMP, opndidle, opndidle, opndaux);
+               }
+               Statement
+               {
+                 decreaseTabSize();
+                 $<quad>3->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle);
+               }
              ;
 WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3.tipo); } Statement { decreaseTabSize(); }
              ;

@@ -20,6 +20,7 @@ main
     l := a != b;
     if c <= a then
       l := b >= a;
-    l := !l;
+    else
+      l := !l;
     l := l && m || n;
   }
