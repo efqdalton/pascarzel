@@ -332,7 +332,7 @@ infoexpressao FactorType (infoexpressao expression);
 %type     <infolexpr> ExprList Arguments
 %type     <nsubscr>   Subscripts SubscrList
 %type     <direcao>   Direcao
-%type     <nargs>     VarList WriteList 
+%type     <nargs>     VarList WriteList
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -435,7 +435,7 @@ ParamList    : ParamDecl
              ;
 ParamDecl    : { printTabs(); } IdList COLON { printf(" : "); } ScalarType SCOLON { printf(";\n"); }
              ;
-LocDecls     : 
+LocDecls     :
              | LOCAL OPBRACE { printIncreasingTabs("local {\n"); } DeclList CLBRACE { printDecreasingTabs("}\n"); }
              ;
 Statmts      : STATEMENTS OPBRACE { printIncreasingTabs("statements {\n"); } StatList CLBRACE { printDecreasingTabs("}\n"); }
@@ -693,7 +693,7 @@ void validateVariableType(){
 
 /* Pretty-printer */
 void increaseTabSize(){
-  identation_deep++;  
+  identation_deep++;
 }
 
 void decreaseTabSize(){
@@ -1063,7 +1063,7 @@ infoexpressao FuncFactor(simbolo simb){
 
   result.tipo = VAROPND;
   result.atr.simb = NovaTemp(simb->tvar);
-  
+
   GeraQuadrupla(OPCALL, opnd1, opnd2, result);
 
   infoexpr.tipo = simb->tvar;
@@ -1391,11 +1391,11 @@ simbolo NovaTemp (int tip) {
   numtemp ++; temp = numtemp;
   for (i = 0; temp > 0; temp /= 10, i++)
     s[i] = temp % 10 + '0';
-  
+
   i --;
   for (j = 0; j <= i; j++)
     nometemp[2+i-j] = s[j];
-  
+
   simb = InsereSimb (nometemp, IDVAR, tip, escopo);
    //simb->tvar = tip;
   simb->inic = simb->ref = VERDADE;
