@@ -22,5 +22,10 @@ main
       l := b >= a;
     else
       l := !l;
+    l := !m;
+    while b > a && l do {
+      b := a - 1;
+      b := b / 2;
+    }
     l := l && m || n;
   }
