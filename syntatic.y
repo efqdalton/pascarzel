@@ -323,7 +323,7 @@ infoexpressao FactorType (infoexpressao expression);
 %type     <infoexpr>  AuxExpr3
 %type     <infoexpr>  AuxExpr4
 %type     <infovar>   Variable
-%type     <infoexpr>  Expression WriteElem Factor
+%type     <infoexpr>  Expression WriteElem Factor StepDef
 %type     <cadeia>    FuncCall
 %type     <infoexpr>  Term
 %type     <infolexpr> ExprList Arguments
@@ -506,14 +506,21 @@ ForStat      : FOR { printIncreasingTabs("for "); }
                  $<quad>$ = GeraQuadruplaIdle();
                }{
                  if($8 == 1){
-                   $<quad>$ = IfInic( CheckRelop(VariableFactor($3), GE, $9) )
+                   $<quad>$ = IfInic( CheckRelop(VariableFactor($3), LE, $9) );
                  }else{
-                   $<quad>$ = IfInic( CheckRelop(VariableFactor($3), LE, $9) )
+                   $<quad>$ = IfInic( CheckRelop(VariableFactor($3), GE, $9) );
                  }
                }
                Statement
                {
                  decreaseTabSize();
+                 if($8 == 1){
+                   // CheckAdop(VariableFactor($3), MAIS, $10);
+                   GeraQuadrupla(OPMAIS, $3.opnd, $10.opnd, $3.opnd);
+                 }else{
+                   // CheckAdop(VariableFactor($3), MENOS, $10);
+                   GeraQuadrupla(OPMENOS, $3.opnd, $10.opnd, $3.opnd);
+                 }
                  GeraQuadruplaJump($<quad>13);
                  $<quad>14->result.atr.rotulo = GeraQuadruplaIdle();
                }
@@ -521,8 +528,8 @@ ForStat      : FOR { printIncreasingTabs("for "); }
 Direcao      : TO     { printf(" to ");     $$ = 1; }
              | DOWNTO { printf(" downto "); $$ = -1; }
              ;
-StepDef      :
-             | STEP { printf(" step "); } Expression
+StepDef      : { $$ = IntFactor(1); }
+             | STEP { printf(" step "); } Expression { $$ = $3; }
              ;
 ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); GeraQuadruplaRead($4); }
              ;

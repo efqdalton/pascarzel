@@ -10,7 +10,8 @@ main
     b := 2;
     c := b + a;
     c := b - a;
-    c := a * b;
+    for a := 0 to 5 do
+      c := a * b;
     c := a / b;
     c := a % b;
     c := ~ a;
