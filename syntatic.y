@@ -35,6 +35,7 @@
 #define   LOGICO     2
 #define   REAL       3
 #define   CARACTERE  4
+#define   CADEIA     5
 
 /* Definicao de constantes para os operadores de quadruplas */
 
@@ -105,7 +106,7 @@ char *translateOperator(int);
 char *nometipid[] = {" ", "IDVAR", "IDGLOB", "IDFUNC"};
 
 /* Strings para nomes dos tipos de variaveis */
-char *nometipvar[5] = { "NAOVAR", "INTEIRO", "LOGICO", "REAL", "CARACTERE" };
+char *nometipvar[] = { "NAOVAR", "INTEIRO", "LOGICO", "REAL", "CARACTERE", "CADEIA" };
 
 /* Strings para operadores de quadruplas */
 
@@ -234,7 +235,7 @@ void            VariableAssigned(simbolo s);
 simbolo         UsarVariavel(char *name, int tid);
 void            VerificaInicRef();
 int             CheckNegop(infoexpressao);
-int             CheckFuncCall(char *id);
+infoexpressao   FuncFactor(char *id);
 infoexpressao   CheckMult(infoexpressao, int, infoexpressao);
 infoexpressao   CheckAdop(infoexpressao, int, infoexpressao);
 infoexpressao   CheckRelop(infoexpressao, int, infoexpressao);
@@ -292,6 +293,7 @@ infoexpressao VariableFactor  (infovariavel infovar);
 infoexpressao IntFactor  (int value);
 infoexpressao FloatFactor(float value);
 infoexpressao CharFactor (char value);
+infoexpressao CadeiaFactor (char *value);
 infoexpressao BoolFactor (int value);
 infoexpressao NegOpFactor(int tid, operando opnd);
 infoexpressao FactorType (infoexpressao expression);
@@ -320,8 +322,7 @@ infoexpressao FactorType (infoexpressao expression);
 %type     <infoexpr>  AuxExpr3
 %type     <infoexpr>  AuxExpr4
 %type     <infovar>   Variable
-%type     <infoexpr>  Expression
-%type     <infoexpr>  Factor
+%type     <infoexpr>  Expression WriteElem Factor
 %type     <cadeia>    FuncCall
 %type     <infoexpr>  Term
 %type     <infolexpr> ExprList Arguments
@@ -505,12 +506,12 @@ ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { pr
 VarList      : Variable { VariableAssigned($1.simb); GeraQuadruplaParam($1.opnd); $$ = 1; }
              | VarList COMMA { printf(", "); } Variable { VariableAssigned($4.simb); GeraQuadruplaParam($4.opnd); $$ = $1 + 1; }
              ;
-WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); }
+WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); GeraQuadruplaWrite($4); }
              ;
-WriteList    : WriteElem { $$ = 1; }
-             | WriteList COMMA { printf(", "); } WriteElem { $$ = $1 + 1; }
+WriteList    : WriteElem { GeraQuadruplaParam($1.opnd); $$ = 1; }
+             | WriteList COMMA { printf(", "); } WriteElem { GeraQuadruplaParam($4.opnd); $$ = $1 + 1; }
              ;
-WriteElem    : STRING { printf("%s", $1); }
+WriteElem    : STRING { printf("%s", $1); $$ = CadeiaFactor($1); }
              | Expression
              ;
 CallStat     : CALL { printWithTabs("call "); } FuncCall SCOLON { printf(";\n"); }
@@ -555,7 +556,7 @@ Factor       : Variable { VariableReferenced($1.simb);                   $$ = Va
              | FALSE    { printf("false");                               $$ = BoolFactor (FALSO);                         }
              | NEGOP    { printf("~"); } Factor {                        $$ = NegOpFactor(CheckNegop($3), $3.opnd);       }
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = FactorType ($3);                            }
-             | FuncCall {                                                $$.tipo = CheckFuncCall($1);                     }
+             | FuncCall {                                                $$ = FuncFactor($1);                     }
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = CheckVariable($<simb>2, $3); }
              ;
@@ -1017,10 +1018,18 @@ int CheckNegop(infoexpressao elem){
   return INTEIRO;
 }
 
-int CheckFuncCall(char *id){
+infoexpressao FuncFactor(char *id){
+  infoexpressao infoexpr;
   simbolo s;
+
+  infoexpr.opnd.tipo = INVALOPND;
+
   s = ProcuraSimb(id, escopo);
-  return s->tvar;
+  if (s != NULL) {
+    infoexpr.tipo = s->tvar;
+  }
+
+  return infoexpr;
 }
 
 infoexpressao CheckMult(infoexpressao term, int op, infoexpressao factor){
@@ -1444,6 +1453,18 @@ infoexpressao CharFactor (char value)
   infoexpr.tipo = CARACTERE;
   infoexpr.opnd.tipo = CHAROPND;
   infoexpr.opnd.atr.valchar = value;
+
+  return infoexpr;
+}
+
+infoexpressao CadeiaFactor (char* value)
+{
+  infoexpressao infoexpr;
+
+  infoexpr.tipo = CADEIA;
+  infoexpr.opnd.tipo = CADOPND;
+  infoexpr.opnd.atr.valcad = malloc(strlen(value) + 1);
+  strcpy(infoexpr.opnd.atr.valcad, value);
 
   return infoexpr;
 }
