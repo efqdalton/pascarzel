@@ -63,6 +63,7 @@
 #define   OPREAD    22
 #define   OPWRITE   23
 #define   OPCALL    24
+#define   OPRETURN  25
 
 /* Definicao de constantes para os tipos de operandos de quadruplas */
 
@@ -115,7 +116,7 @@ char *nomeoperquad[] = {"",
   "OR", "AND", "LT", "LE", "GT", "GE", "EQ", "NE", "MAIS",
   "MENOS", "MULT", "DIV", "RESTO", "MENUN", "NOT", "ATRIB",
   "OPENMOD", "NOP", "JUMP", "JF", "PARAM", "READ", "WRITE",
-  "CALL"
+  "CALL", "RETURN"
 };
 
 /* Strings para tipos de operandos de quadruplas */
@@ -558,8 +559,8 @@ Arguments    : { $$ = EmptyInfoList(); }
 ExprList     : Expression { $$ = InicListExpr($1.tipo); GeraQuadruplaParam($1.opnd); }
              | ExprList COMMA { printf(", "); } Expression { $$ = ConcatListExpr($1, InicListExpr($4.tipo)); GeraQuadruplaParam($4.opnd); }
              ;
-ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
-             | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
+ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); GeraQuadrupla(OPRETURN, opndidle, opndidle, opndidle);}
+             | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); GeraQuadrupla(OPRETURN, $3.opnd, opndidle, opndidle); }
              ;
 AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); GeraQuadrupla(OPATRIB, $2.opnd, opndidle, $6.opnd); }
              ;
@@ -575,7 +576,7 @@ AuxExpr2     : AuxExpr3 { $$ = $1; }
 AuxExpr3     : AuxExpr4 { $$ = $1; }
              | AuxExpr4 RELOP { printf(" %s ", translateOperator($2)); } AuxExpr4 { $$ = CheckRelop($1, $2, $4); }
              ;
-AuxExpr4     : Term { $$ = $1;} 
+AuxExpr4     : Term { $$ = $1;}
              | AuxExpr4 ADOP { printf("%s", translateOperator($2)); } Term { $$ = CheckAdop($1, $2, $4); }
              ;
 Term         : Factor { $$ = $1; }
@@ -640,6 +641,9 @@ void InicFunc(char *id)
 
 void FimFunc()
 {
+  if (quadcorrente->oper != OPRETURN) {
+    GeraQuadrupla(OPRETURN, opndidle, opndidle, opndidle);
+  }
   escopo = simb = escopo->escopo;
   //AnulaListSimb(&pontvardecl);
   //AnulaListSimb(&pontparam);
