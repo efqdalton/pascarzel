@@ -1,6 +1,6 @@
 global {
   vetor : array [2] of int;
-  a : array [2] of int;
+  a : int;
 }
 
 function sayHello : void
@@ -12,6 +12,7 @@ function sayHello : void
 main
   statements {
     call sayHello();
+    vetor := 2;
     a := 2;
     write(a);
     vetor[0] := 1;

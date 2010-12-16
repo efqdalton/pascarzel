@@ -73,6 +73,7 @@
 #define   CADOPND    6
 #define   ROTOPND    7
 #define   FUNCOPND   8
+#define   INVALOPND  9
 
 
 /* Definicao de outras constantes */
@@ -116,8 +117,8 @@ char *nomeoperquad[24] = {"",
 
 /* Strings para tipos de operandos de quadruplas */
 
-char *nometipoopndquad[9] = {"IDLE",
-  "VAR", "INT", "REAL", "CARAC", "LOGIC", "CADEIA", "ROTULO", "FUNCAO"
+char *nometipoopndquad[] = {"IDLE",
+  "VAR", "INT", "REAL", "CARAC", "LOGIC", "CADEIA", "ROTULO", "FUNCAO", "INVAL"
 };
 
 
@@ -986,6 +987,8 @@ int CheckFuncCall(char *id){
 
 infoexpressao CheckMult(infoexpressao term, int op, infoexpressao factor){
   infoexpressao res;
+  res.opnd.tipo = INVALOPND;
+
   switch(op) {
     case MULT:
     case DIV:
@@ -1153,6 +1156,7 @@ infovariavel CheckVariable(simbolo simb, int index){
   infovariavel infoexpr;
 
   infoexpr.simb = simb;
+  infoexpr.opnd.tipo = INVALOPND;
 
   if (simb == NULL) {
     return infoexpr;
