@@ -445,7 +445,11 @@ Statement    : CompoundStat
              ;
 CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatList CLBRACE {  decreaseTabSize(); printIncreasingTabs("}\n"); }
              ;
-IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3.tipo); /*$<quad>$ = IfInic($3);*/ increaseTabSize(); } Statement { decreaseTabSize(); /*$<quad>$->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle);*/ } ElseStat
+IfStat       : IF { printWithTabs("if "); } Expression THEN
+                { printf(" then\n"); CheckLogic($3.tipo); $<quad>$ = IfInic($3); increaseTabSize(); }
+                Statement
+                { decreaseTabSize(); $<quad>5->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle); }
+                ElseStat
              ;
 ElseStat     :
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
