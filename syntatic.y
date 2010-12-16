@@ -282,6 +282,9 @@ void      ImprimeQuadruplas (void);
 quadrupla GeraQuadrupla (int, operando, operando, operando);
 quadrupla GeraQuadruplaIdle ();
 quadrupla GeraQuadruplaJump(quadrupla destino);
+quadrupla GeraQuadruplaRead(int params);
+quadrupla GeraQuadruplaWrite(int params);
+quadrupla GeraQuadruplaParam(operando opnd);
 simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
 
@@ -305,7 +308,7 @@ infoexpressao FactorType (infoexpressao expression);
   float     valreal;
   char      carac;
   simbolo   simb;
-  int       nsubscr;
+  int       nsubscr, nargs;
   quadrupla quad;
   infoexpressao infoexpr;	  infovariavel infovar;
   infolistexpr infolexpr;
@@ -323,6 +326,7 @@ infoexpressao FactorType (infoexpressao expression);
 %type     <infoexpr>  Term
 %type     <infolexpr> ExprList Arguments
 %type     <nsubscr>   Subscripts SubscrList
+%type     <nargs>     VarList WriteList 
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -496,15 +500,15 @@ Direcao      : TO     { printf(" to "); }
 StepDef      :
              | STEP { printf(" step "); } Expression
              ;
-ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); }
+ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); GeraQuadruplaRead($4); }
              ;
-VarList      : Variable { VariableAssigned($1.simb); }
-             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4.simb); }
+VarList      : Variable { VariableAssigned($1.simb); GeraQuadruplaParam($1.opnd); $$ = 1; }
+             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4.simb); GeraQuadruplaParam($4.opnd); $$ = $1 + 1; }
              ;
 WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); }
              ;
-WriteList    : WriteElem
-             | WriteList COMMA { printf(", "); } WriteElem
+WriteList    : WriteElem { $$ = 1; }
+             | WriteList COMMA { printf(", "); } WriteElem { $$ = $1 + 1; }
              ;
 WriteElem    : STRING { printf("%s", $1); }
              | Expression
@@ -1496,4 +1500,30 @@ quadrupla GeraQuadruplaJump(quadrupla destino) {
   opndaux.atr.rotulo = destino;
   return GeraQuadrupla(OPJUMP, opndidle, opndidle, opndaux);
 }
+
+quadrupla GeraQuadruplaRead(int params)
+{
+  operando opnd1;
+
+  opnd1.tipo = INTOPND;
+  opnd1.atr.valint = params;
+
+  return GeraQuadrupla(OPREAD, opnd1, opndidle, opndidle);
+}
+
+quadrupla GeraQuadruplaWrite(int params)
+{
+  operando opnd1;
+
+  opnd1.tipo = INTOPND;
+  opnd1.atr.valint = params;
+
+  return GeraQuadrupla(OPWRITE, opnd1, opndidle, opndidle);
+}
+
+quadrupla GeraQuadruplaParam(operando opnd)
+{
+  return GeraQuadrupla(PARAM, opnd, opndidle, opndidle);
+}
+
 
