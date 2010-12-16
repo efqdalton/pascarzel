@@ -305,9 +305,10 @@ infoexpressao FactorType (infoexpressao expression);
   float     valreal;
   char      carac;
   simbolo   simb;
-  int       nsubscr;
+  int       nsubscr, direcao;
   quadrupla quad;
-  infoexpressao infoexpr;	  infovariavel infovar;
+  infoexpressao infoexpr;
+  infovariavel infovar;
   infolistexpr infolexpr;
 }
 
@@ -323,6 +324,7 @@ infoexpressao FactorType (infoexpressao expression);
 %type     <infoexpr>  Term
 %type     <infolexpr> ExprList Arguments
 %type     <nsubscr>   Subscripts SubscrList
+%type     <direcao>   Direcao
 
 /* Declaracao dos atributos dos tokens e dos nao-terminais */
 %token    <cadeia>    ID
@@ -488,10 +490,24 @@ WhileStat    : WHILE
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
-ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" := "); VariableAssigned($3.simb); } Expression Direcao Expression StepDef DO { printf(" do\n"); } Statement { decreaseTabSize(); }
+ForStat      : FOR { printIncreasingTabs("for "); }
+               Variable { VariableAssigned($3.simb); } ASSIGN { printf(" := "); VariableAssigned($3.simb); } Expression
+               Direcao Expression StepDef DO
+               {
+                 printf(" do\n");
+                 CheckAssign($3.simb, $7.tipo);
+                 GeraQuadrupla(OPATRIB, $3.opnd, opndidle, $7.opnd);
+                 if($8 == 1){
+                   
+                 }else{
+                   
+                 }
+                 $<quad>$ = IfInic($7);
+               }
+               Statement { decreaseTabSize(); }
              ;
-Direcao      : TO     { printf(" to "); }
-             | DOWNTO { printf(" downto "); }
+Direcao      : TO     { printf(" to ");     $$ = 1; }
+             | DOWNTO { printf(" downto "); $$ = -1; }
              ;
 StepDef      :
              | STEP { printf(" step "); } Expression
