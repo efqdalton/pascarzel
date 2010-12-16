@@ -62,6 +62,7 @@
 #define   PARAM     21
 #define   OPREAD    22
 #define   OPWRITE   23
+#define   OPCALL    24
 
 /* Definicao de constantes para os tipos de operandos de quadruplas */
 
@@ -110,10 +111,11 @@ char *nometipvar[] = { "NAOVAR", "INTEIRO", "LOGICO", "REAL", "CARACTERE", "CADE
 
 /* Strings para operadores de quadruplas */
 
-char *nomeoperquad[24] = {"",
+char *nomeoperquad[] = {"",
   "OR", "AND", "LT", "LE", "GT", "GE", "EQ", "NE", "MAIS",
   "MENOS", "MULT", "DIV", "RESTO", "MENUN", "NOT", "ATRIB",
-  "OPENMOD", "NOP", "JUMP", "JF", "PARAM", "READ", "WRITE"
+  "OPENMOD", "NOP", "JUMP", "JF", "PARAM", "READ", "WRITE",
+  "CALL"
 };
 
 /* Strings para tipos de operandos de quadruplas */
@@ -129,12 +131,20 @@ typedef celsimb *simbolo;
 typedef struct elemlistsimb elemlistsimb;
 typedef elemlistsimb *listasimbolo;
 
+typedef union atribopnd atribopnd;
+typedef struct operando operando;
+typedef struct celquad celquad;
+typedef celquad *quadrupla;
+typedef struct celfunchead celfunchead;
+typedef celfunchead *funchead;
+
 struct celsimb {
   char *cadeia;
   int  tid, tvar, tparam, ndims, dims[MAXDIMS+1], nparam;
   char inic, ref, array, param;
   listasimbolo listvar, listparam, listfunc;
   simbolo escopo, prox;
+  celfunchead *fhead;
 };
 
 /* Declarações para lista linear de simbolos */
@@ -165,12 +175,6 @@ infolistexpr InicListExpr(int tid);
 infolistexpr ConcatListExpr(infolistexpr l1, infolistexpr l2);
 
 /* Declaracoes para a estrutura do codigo intermediario */
-typedef union atribopnd atribopnd;
-typedef struct operando operando;
-typedef struct celquad celquad;
-typedef celquad *quadrupla;
-typedef struct celfunchead celfunchead;
-typedef celfunchead *funchead;
 
 union atribopnd {
   simbolo simb; int valint; float valfloat;
@@ -235,7 +239,7 @@ void            VariableAssigned(simbolo s);
 simbolo         UsarVariavel(char *name, int tid);
 void            VerificaInicRef();
 int             CheckNegop(infoexpressao);
-infoexpressao   FuncFactor(char *id);
+infoexpressao   FuncFactor(simbolo simb);
 infoexpressao   CheckMult(infoexpressao, int, infoexpressao);
 infoexpressao   CheckAdop(infoexpressao, int, infoexpressao);
 infoexpressao   CheckRelop(infoexpressao, int, infoexpressao);
@@ -323,8 +327,7 @@ infoexpressao FactorType (infoexpressao expression);
 %type     <infoexpr>  AuxExpr3
 %type     <infoexpr>  AuxExpr4
 %type     <infovar>   Variable
-%type     <infoexpr>  Expression WriteElem Factor StepDef
-%type     <cadeia>    FuncCall
+%type     <infoexpr>  Expression WriteElem Factor StepDef FuncCall
 %type     <infoexpr>  Term
 %type     <infolexpr> ExprList Arguments
 %type     <nsubscr>   Subscripts SubscrList
@@ -547,13 +550,13 @@ WriteElem    : STRING { printf("%s", $1); $$ = CadeiaFactor($1); }
 CallStat     : CALL { printWithTabs("call "); } FuncCall SCOLON { printf(";\n"); }
              ;
 FuncCall     : ID OPPAR { $<simb>$ = UsarVariavel($1, IDFUNC); printf("%s(", $1); }
-               Arguments CLPAR { CheckArgumentos($4, $<simb>3); printf(")"); strcpy($$, $1); }
+               Arguments CLPAR { CheckArgumentos($4, $<simb>3); printf(")"); $$ = FuncFactor($<simb>3); }
              ;
 Arguments    : { $$ = EmptyInfoList(); }
              | ExprList
              ;
-ExprList     : Expression { $$ = InicListExpr($1.tipo); }
-             | ExprList COMMA { printf(", "); } Expression { $$ = ConcatListExpr($1, InicListExpr($4.tipo)); }
+ExprList     : Expression { $$ = InicListExpr($1.tipo); GeraQuadruplaParam($1.opnd); }
+             | ExprList COMMA { printf(", "); } Expression { $$ = ConcatListExpr($1, InicListExpr($4.tipo)); GeraQuadruplaParam($4.opnd); }
              ;
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); }
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); }
@@ -586,7 +589,7 @@ Factor       : Variable { VariableReferenced($1.simb);                   $$ = Va
              | FALSE    { printf("false");                               $$ = BoolFactor (FALSO);                         }
              | NEGOP    { printf("~"); } Factor {                        $$ = NegOpFactor(CheckNegop($3), $3.opnd);       }
              | OPPAR    { printf("("); } Expression CLPAR { printf(")"); $$ = FactorType ($3);                            }
-             | FuncCall {                                                $$ = FuncFactor($1);                     }
+             | FuncCall
              ;
 Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ = simb; } Subscripts { $$ = CheckVariable($<simb>2, $3); }
              ;
@@ -1048,16 +1051,23 @@ int CheckNegop(infoexpressao elem){
   return INTEIRO;
 }
 
-infoexpressao FuncFactor(char *id){
+infoexpressao FuncFactor(simbolo simb){
   infoexpressao infoexpr;
-  simbolo s;
+  operando opnd1, opnd2, result;
 
-  infoexpr.opnd.tipo = INVALOPND;
+  opnd1.tipo = FUNCOPND;
+  opnd1.atr.func = simb->fhead;
 
-  s = ProcuraSimb(id, escopo);
-  if (s != NULL) {
-    infoexpr.tipo = s->tvar;
-  }
+  opnd2.tipo = INTOPND;
+  opnd2.atr.valint = simb->nparam;
+
+  result.tipo = VAROPND;
+  result.atr.simb = NovaTemp(simb->tvar);
+  
+  GeraQuadrupla(OPCALL, opnd1, opnd2, result);
+
+  infoexpr.tipo = simb->tvar;
+  infoexpr.opnd = result;
 
   return infoexpr;
 }
@@ -1349,6 +1359,7 @@ void InicCodIntermFunc (simbolo simb) {
   funccorrente->prox     = NULL;
   funccorrente->funcname = simb;
   funccorrente->listquad = malloc(sizeof (celquad));
+  simb->fhead            = funccorrente;
   quadcorrente           = funccorrente->listquad;
   quadcorrente->prox     = NULL;
   numquadcorrente        = 0;
