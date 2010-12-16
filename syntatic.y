@@ -280,6 +280,8 @@ void      InicCodIntermed (void);
 void      InicCodIntermFunc (simbolo);
 void      ImprimeQuadruplas (void);
 quadrupla GeraQuadrupla (int, operando, operando, operando);
+quadrupla GeraQuadruplaIdle ();
+quadrupla GeraQuadruplaJump(quadrupla destino);
 simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
 
@@ -448,13 +450,18 @@ CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatLi
 IfStat       : IF { printWithTabs("if "); } Expression THEN
                 { printf(" then\n"); CheckLogic($3.tipo); $<quad>$ = IfInic($3); increaseTabSize(); }
                 Statement
-                { decreaseTabSize(); $<quad>5->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle); }
+                { decreaseTabSize(); $<quad>5->result.atr.rotulo = GeraQuadruplaIdle(); }
                 ElseStat
              ;
 ElseStat     :
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
              ;
-WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3.tipo); } Statement { decreaseTabSize(); }
+WhileStat    : WHILE
+                { printIncreasingTabs("while "); $<quad>$ = GeraQuadruplaIdle();}
+                Expression DO 
+                { printf(" do\n"); CheckLogic($3.tipo); $<quad>$ = IfInic($3);}
+                Statement
+                { decreaseTabSize(); GeraQuadruplaJump($<quad>2); $<quad>5->result.atr.rotulo = GeraQuadruplaIdle(); }
              ;
 RepeatStat   : REPEAT { printIncreasingTabs("repeat "); } Statement UNTIL { printDecreasingTabs("until "); } Expression SCOLON { printf(";"); }
              ;
@@ -1295,6 +1302,10 @@ quadrupla GeraQuadrupla (int oper, operando opnd1, operando opnd2, operando resu
   return quadcorrente;
 }
 
+quadrupla GeraQuadruplaIdle () {
+  return GeraQuadrupla(NOP, opndidle, opndidle, opndidle);
+}
+
 simbolo NovaTemp (int tip) {
   simbolo simb;
   int temp, i, j;
@@ -1453,5 +1464,13 @@ infoexpressao VariableFactor  (infovariavel infovar)
 quadrupla IfInic(infoexpressao expr){
   opndaux.tipo = ROTOPND;
   return GeraQuadrupla(OPJF, expr.opnd, opndidle, opndaux);
+}
+
+quadrupla GeraQuadruplaJump(quadrupla destino) {
+  operando opndaux;
+
+  opndaux.tipo = ROTOPND;
+  opndaux.atr.rotulo = destino;
+  return GeraQuadrupla(OPJUMP, opndidle, opndidle, opndaux);
 }
 

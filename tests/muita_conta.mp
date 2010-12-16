@@ -21,5 +21,9 @@ main
     if c <= a then
       l := b >= a;
     l := !l;
+    while b > a && l do {
+            b := a - 1;
+    b := b / 2;
+    }
     l := l && m || n;
   }
