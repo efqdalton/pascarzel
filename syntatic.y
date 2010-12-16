@@ -457,12 +457,12 @@ IfStat       : IF { printWithTabs("if "); } Expression THEN
                 }
                 ElseStat
                 {
-                  if($<quad>8->prox != quadcorrente){
-                    quadaux              = $<quad>8->prox;
-                    $<quad>8->prox       = quadaux->prox;
-                    quadaux->prox        = $<quad>8->prox->prox;
-                    $<quad>8->prox->prox = quadaux;
-                    RenumQuadruplas($<quad>8, quadcorrente);
+                  if($<quad>7->prox != quadcorrente){
+                    quadaux              = $<quad>7->prox;
+                    $<quad>7->prox       = quadaux->prox;
+                    quadaux->prox        = $<quad>7->prox->prox;
+                    $<quad>7->prox->prox = quadaux;
+                    RenumQuadruplas($<quad>7, quadcorrente);
                   }
                 }
              ;
@@ -476,7 +476,7 @@ ElseStat     :
                Statement
                {
                  decreaseTabSize();
-                 $<quad>3->result.atr.rotulo = GeraQuadruplaIdle();
+                 $<quad>2->result.atr.rotulo = GeraQuadruplaIdle();
                }
              ;
 WhileStat    : WHILE
