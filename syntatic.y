@@ -447,7 +447,7 @@ CompoundStat : OPBRACE { printDecreasingTabs("{\n"); increaseTabSize(); } StatLi
              ;
 IfStat       : IF { printWithTabs("if "); } Expression THEN { printf(" then\n"); CheckLogic($3.tipo); /*$<quad>$ = IfInic($3);*/ increaseTabSize(); } Statement { decreaseTabSize(); /*$<quad>$->result.atr.rotulo = GeraQuadrupla(NOP, opndidle, opndidle, opndidle);*/ } ElseStat
              ;
-ElseStat     : ;
+ElseStat     :
              | ELSE { printIncreasingTabs("else\n"); } Statement { decreaseTabSize(); }
              ;
 WhileStat    : WHILE { printIncreasingTabs("while "); } Expression DO { printf(" do\n"); CheckLogic($3.tipo); } Statement { decreaseTabSize(); }
@@ -459,7 +459,7 @@ ForStat      : FOR { printIncreasingTabs("for "); } Variable ASSIGN { printf(" :
 Direcao      : TO     { printf(" to "); }
              | DOWNTO { printf(" downto "); }
              ;
-StepDef      : ;
+StepDef      :
              | STEP { printf(" step "); } Expression
              ;
 ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); }
