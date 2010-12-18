@@ -64,6 +64,11 @@
 #define   OPWRITE   23
 #define   OPCALL    24
 #define   OPRETURN  25
+#define   OPIND     26
+#define   OPINDEX   27
+#define   OPCONTAP  28
+#define   OPATRIBP  29
+
 
 /* Definicao de constantes para os tipos de operandos de quadruplas */
 
@@ -116,7 +121,7 @@ char *nomeoperquad[] = {"",
   "OR", "AND", "LT", "LE", "GT", "GE", "EQ", "NE", "MAIS",
   "MENOS", "MULT", "DIV", "RESTO", "MENUN", "NOT", "ATRIB",
   "OPENMOD", "NOP", "JUMP", "JF", "PARAM", "READ", "WRITE",
-  "CALL", "RETURN"
+  "CALL", "RETURN", "IND", "INDEX", "CONTAPONT", "ATRIBPONT"
 };
 
 /* Strings para tipos de operandos de quadruplas */
@@ -519,10 +524,8 @@ ForStat      : FOR { printIncreasingTabs("for "); }
                {
                  decreaseTabSize();
                  if($8 == 1){
-                   // CheckAdop(VariableFactor($3), MAIS, $10);
                    GeraQuadrupla(OPMAIS, $3.opnd, $10.opnd, $3.opnd);
                  }else{
-                   // CheckAdop(VariableFactor($3), MENOS, $10);
                    GeraQuadrupla(OPMENOS, $3.opnd, $10.opnd, $3.opnd);
                  }
                  GeraQuadruplaJump($<quad>13);
@@ -597,8 +600,8 @@ Variable     : ID { printf("%s", $1); simb = UsarVariavel($1, IDVAR); $<simb>$ =
 Subscripts   : {$$ = 0;}
              | OPBRAK { printf("["); } SubscrList CLBRAK { printf("]"); $$ = $3; }
              ;
-SubscrList   : AuxExpr4 { if($1.tipo != INTEIRO && $1.tipo != CARACTERE) TipoSubscritoInvalido(); $$ = 1; }
-             | SubscrList COMMA { printf(", "); } AuxExpr4 { if($4.tipo != INTEIRO && $4.tipo != CARACTERE) TipoSubscritoInvalido(); $$ = $1 + 1; }
+SubscrList   : AuxExpr4 { if($1.tipo != INTEIRO && $1.tipo != CARACTERE) TipoSubscritoInvalido(); $$ = 1; GeraQuadrupla(OPIND, $1.opnd, opndidle, opndidle); }
+             | SubscrList COMMA { printf(", "); } AuxExpr4 { if($4.tipo != INTEIRO && $4.tipo != CARACTERE) TipoSubscritoInvalido(); $$ = $1 + 1; GeraQuadrupla(OPIND, $4.opnd, opndidle, opndidle); }
              ;
 
 %%
@@ -1541,8 +1544,7 @@ infoexpressao FactorType(infoexpressao expression)
   return expression;
 }
 
-infoexpressao VariableFactor  (infovariavel infovar)
-{
+infoexpressao VariableFactor(infovariavel infovar){
   infoexpressao infoexpr;
 
   infoexpr.opnd = infovar.opnd;
