@@ -302,6 +302,7 @@ quadrupla GeraQuadruplaWrite(int params);
 quadrupla GeraQuadruplaParam(operando opnd);
 simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
+void      AssignVariable(infoexpressao, infovariavel);
 
 infoexpressao VariableFactor  (infovariavel infovar);
 infoexpressao IntFactor  (int value);
@@ -514,7 +515,8 @@ ForStat      : FOR { printIncreasingTabs("for "); }
                {
                  printf(" do\n");
                  CheckAssign($3.simb, $7.tipo);
-                 GeraQuadrupla(OPATRIB, $3.opnd, opndidle, $7.opnd);
+                 AssignVariable($7, $3);
+                 // GeraQuadrupla(OPATRIB, $3.opnd, opndidle, $7.opnd);
                }{
                  $<quad>$ = GeraQuadruplaIdle();
                }{
@@ -569,7 +571,7 @@ ExprList     : Expression { $$ = InicListExpr($1.tipo); GeraQuadruplaParam($1.op
 ReturnStat   : RETURN SCOLON { printWithTabs("return ;\n"); GeraQuadrupla(OPRETURN, opndidle, opndidle, opndidle);}
              | RETURN { printWithTabs("return "); } Expression SCOLON { printf(";\n"); GeraQuadrupla(OPRETURN, $3.opnd, opndidle, opndidle); }
              ;
-AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); GeraQuadrupla(OPATRIB, $2.opnd, opndidle, $6.opnd); }
+AssignStat   : { printTabs(); } Variable { VariableAssigned($2.simb); } ASSIGN { printf(" := "); } Expression SCOLON { printf(";\n"); CheckAssign($2.simb, $6.tipo); AssignVariable($6, $2); /*GeraQuadrupla(OPATRIB, $2.opnd, opndidle, $6.opnd);*/ }
              ;
 Expression   : AuxExpr1 { $$ = $1; }
              | Expression OROP { printf(" || "); } AuxExpr1 { $$ = CheckLogop($1, $2, $4); }
@@ -1282,6 +1284,14 @@ infovariavel CheckVariable(simbolo simb, int index){
   }
 
   return infoexpr;
+}
+
+void AssignVariable(infoexpressao assigner, infovariavel assignee){
+  if(assignee.simb->array == FALSO){
+    GeraQuadrupla(OPATRIB, assignee.opnd, opndidle, assigner.opnd);
+  }else{
+    GeraQuadrupla(OPATRIBP, assignee.pointer.opnd, opndidle, assigner.opnd);
+  }
 }
 
 /*  Erros semanticos  */
