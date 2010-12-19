@@ -8,4 +8,5 @@ main
     arr[0, 2*1] := 1;
     brr[0     ] := arr[0, 2]+3.14;
     read(a, b, arr[0, 0], c);
+    write("String", "String2");
   }

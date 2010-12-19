@@ -68,7 +68,7 @@
 #define   OPINDEX   27
 #define   OPCONTAP  28
 #define   OPATRIBP  29
-
+#define   OPEXIT    30
 
 /* Definicao de constantes para os tipos de operandos de quadruplas */
 
@@ -121,7 +121,8 @@ char *nomeoperquad[] = {"",
   "OR", "AND", "LT", "LE", "GT", "GE", "EQ", "NE", "MAIS",
   "MENOS", "MULT", "DIV", "RESTO", "MENUN", "NOT", "ATRIB",
   "OPENMOD", "NOP", "JUMP", "JF", "PARAM", "READ", "WRITE",
-  "CALL", "RETURN", "IND", "INDEX", "CONTAPONT", "ATRIBPONT"
+  "CALL", "RETURN", "IND", "INDEX", "CONTAPONT", "ATRIBPONT",
+  "OPEXIT"
 };
 
 /* Strings para tipos de operandos de quadruplas */
@@ -151,6 +152,9 @@ struct celsimb {
   listasimbolo listvar, listparam, listfunc;
   simbolo escopo, prox;
   celfunchead *fhead;
+  int   *valint;
+  float *valfloat;
+  char  *valchar, *vallogic;
 };
 
 /* Declarações para lista linear de simbolos */
@@ -314,6 +318,29 @@ infoexpressao BoolFactor (int value);
 infoexpressao NegOpFactor(int tid, operando opnd);
 infoexpressao FactorType (infoexpressao expression);
 
+// Estruturas para Interpretador
+
+typedef struct nohopnd nohopnd;
+struct nohopnd{
+  operando opnd;
+  nohopnd *prox;
+};
+typedef nohopnd *pilhaoperando;
+pilhaoperando pilhaopnd, pilhaopndaux;
+
+// Protótipos para helpers de Interpretador
+
+void EmpilharOpnd(operando, pilhaoperando *);
+void DesempilharOpnd(pilhaoperando *);
+operando TopoOpnd(pilhaoperando);
+void InicPilhaOpnd(pilhaoperando *);
+char VaziaOpnd(pilhaoperando);
+
+// Protótipos para Interpretador
+
+void InterpCodIntermed();
+
+
 %}
 
 /* Ativa erros com mais detalhes do yacc */
@@ -405,7 +432,7 @@ infoexpressao FactorType (infoexpressao expression);
 
 /* Producoes da gramatica */
 
-Prog         : { InicTabSimb(); InicCodIntermed(); InicProg(); } GlobDecls FuncList MainDef { FimProg(); ImprimeTabSimb(); ImprimeQuadruplas(); }
+Prog         : { InicTabSimb(); InicCodIntermed(); InicProg(); } GlobDecls FuncList MainDef { FimProg(); ImprimeTabSimb(); GeraQuadrupla(OPEXIT, opndidle, opndidle, opndidle); ImprimeQuadruplas(); InterpCodIntermed(); }
              ;
 GlobDecls    :
              | GLOBAL { printIncreasingTabs("global {\n"); } OPBRACE DeclList CLBRACE { printDecreasingTabs("}\n\n"); }
@@ -1644,4 +1671,129 @@ quadrupla GeraQuadruplaWrite(int params)
 
 quadrupla GeraQuadruplaParam(operando opnd){
   return GeraQuadrupla(PARAM, opnd, opndidle, opndidle);
+}
+
+// Helpers para Interpretador
+
+void EmpilharOpnd(operando x, pilhaoperando *P){
+  nohopnd *temp;
+  temp = *P;
+  *P = (nohopnd *) malloc (sizeof (nohopnd));
+  (*P)->opnd = x; (*P)->prox = temp;
+}
+
+void DesempilharOpnd(pilhaoperando *P){
+  nohopnd *temp;
+  if(!VaziaOpnd(*P)){
+    temp = *P;
+    *P = (*P)->prox;
+    free(temp);
+  }else{
+    printf("\n  Delecao em pilha vazia\n");
+  }
+}
+
+operando TopoOpnd(pilhaoperando P){
+  if(!VaziaOpnd(P)) return P->opnd;
+  else printf("\n\tTopo de pilha vazia\n");
+}
+
+void InicPilhaOpnd(pilhaoperando *P){
+  *P = NULL;
+}
+
+char VaziaOpnd(pilhaoperando P){
+  if(P == NULL) return 1;
+  else return 0;
+}
+
+// Interpretador
+
+void AlocaVariaveis () {
+  simbolo s; int nelemaloc, i, j;
+  printf ("\n    Alocando as variaveis:");
+  for (i = 0; i < NCLASSHASH; i++){
+    if(tabsimb[i]){
+      for(s = tabsimb[i]; s != NULL; s = s->prox){
+        if(s->tid == IDVAR){
+          nelemaloc = 1;
+          if(s->array){
+            for(j = 1; j <= s->ndims; j++) nelemaloc *= s->dims[j];
+          }
+          switch(s->tvar){
+          case INTEIRO:
+            s->valint = malloc(nelemaloc * sizeof (int));     break;
+          case REAL:
+            s->valfloat = malloc(nelemaloc * sizeof (float)); break;
+          case CARACTERE:
+            s->valchar = malloc(nelemaloc * sizeof (char));   break;
+          case LOGICO:
+            s->vallogic = malloc(nelemaloc * sizeof (char));  break;
+          }
+          printf ("\n      %s: %d elemento(s) alocado(s) ", s->cadeia, nelemaloc);
+        }
+      }
+    }
+  }
+}
+
+void ExecQuadWrite(quadrupla quad) {
+  int i;
+  operando opndaux;
+  pilhaoperando pilhaopndaux;
+
+  printf("\n  Escrevendo:\n    ");
+  InicPilhaOpnd(&pilhaopndaux);
+  for(i = 1; i <= quad->opnd1.atr.valint; i++) {
+    EmpilharOpnd(TopoOpnd (pilhaopnd), &pilhaopndaux);
+    DesempilharOpnd(&pilhaopnd);
+  }
+  for(i = 1; i <= quad->opnd1.atr.valint; i++){
+    opndaux = TopoOpnd(pilhaopndaux);
+    DesempilharOpnd(&pilhaopndaux);
+    switch(opndaux.tipo){
+      case INTOPND:     printf("%d", opndaux.atr.valint);             break;
+      case REALOPND:    printf("%g", opndaux.atr.valfloat);           break;
+      case CHAROPND:    printf("%c", opndaux.atr.valchar);            break;
+      case LOGICOPND:
+        if(opndaux.atr.vallogic == 1) printf("TRUE");
+        else printf("FALSE");
+        break;
+      case CADOPND:     printf("%s", opndaux.atr.valcad);             break;
+      case VAROPND:
+        switch(opndaux.atr.simb->tvar){
+          case INTEIRO: printf("%d", *(opndaux.atr.simb->valint));    break;
+          case REAL:    printf("%g", *(opndaux.atr.simb->valfloat));  break;
+          case LOGICO:
+            if(*(opndaux.atr.simb->vallogic) == 1) printf("TRUE");
+            else printf("FALSE");
+            break;
+          case CARACTERE: printf("%c", *(opndaux.atr.simb->valchar)); break;
+        }
+        break;
+    }
+  }
+  printf("\n");
+}
+
+void InterpCodIntermed(){
+  quadrupla quad, quadprox;
+  char encerra;
+  printf("\n\nINTERPRETADOR:\n");
+  InicPilhaOpnd(&pilhaopnd);
+  encerra = FALSO;
+  quad = codintermed->prox->listquad->prox;
+  while(!encerra){
+    printf ("\n%4d) %s", quad->num,
+    nomeoperquad[quad->oper]);
+    quadprox = quad->prox;
+    switch(quad->oper){
+      case OPEXIT:  encerra = VERDADE;                     break;
+      case OPENMOD: AlocaVariaveis();                      break;
+      case PARAM:   EmpilharOpnd(quad->opnd1, &pilhaopnd); break;
+      case OPWRITE: ExecQuadWrite(quad);                   break;
+    }
+    if(!encerra) quad = quadprox;
+  }
+  printf ("\n");
 }
