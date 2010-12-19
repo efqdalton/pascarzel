@@ -303,6 +303,7 @@ quadrupla GeraQuadruplaParam(operando opnd);
 simbolo   NovaTemp (int);
 void      RenumQuadruplas (quadrupla, quadrupla);
 void      AssignVariable(infoexpressao, infovariavel);
+int       GeraQuadruplaParamRead(infovariavel, int);
 
 infoexpressao VariableFactor  (infovariavel infovar);
 infoexpressao IntFactor  (int value);
@@ -546,8 +547,8 @@ StepDef      : { $$ = IntFactor(1); }
              ;
 ReadStat     : READ OPPAR { printWithTabs("read( "); } VarList CLPAR SCOLON { printf(" );\n"); GeraQuadruplaRead($4); }
              ;
-VarList      : Variable { VariableAssigned($1.simb); GeraQuadruplaParam($1.opnd); $$ = 1; }
-             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4.simb); GeraQuadruplaParam($4.opnd); $$ = $1 + 1; }
+VarList      : Variable { VariableAssigned($1.simb); $$ = GeraQuadruplaParamRead($1, 0);/*GeraQuadruplaParam($1.opnd); $$ = 1;*/ }
+             | VarList COMMA { printf(", "); } Variable { VariableAssigned($4.simb); $$ = GeraQuadruplaParamRead($4, $1); /*GeraQuadruplaParam($4.opnd); $$ = $1 + 1;*/ }
              ;
 WriteStat    : WRITE OPPAR { printWithTabs("write( "); } WriteList CLPAR SCOLON { printf(" );\n"); GeraQuadruplaWrite($4); }
              ;
@@ -1286,11 +1287,29 @@ infovariavel CheckVariable(simbolo simb, int index){
   return infoexpr;
 }
 
+int GeraQuadruplaParamRead(infovariavel infovar, int stack_size){
+  infoexpressao aux;
+
+  if(infovar.simb->array == FALSO){
+    GeraQuadruplaParam(infovar.opnd);
+    return stack_size + 1;
+  }else{
+    GeraQuadruplaRead(stack_size);
+    aux.tipo = infovar.simb->tvar;
+    aux.opnd.tipo = VAROPND;
+    aux.opnd.atr.simb = NovaTemp(infovar.pointer.tipo);
+    GeraQuadruplaParam(aux.opnd);
+    GeraQuadruplaRead(1);
+    GeraQuadrupla(OPATRIBP, aux.opnd, opndidle, infovar.pointer.opnd);
+    return 0;
+  }
+}
+
 void AssignVariable(infoexpressao assigner, infovariavel assignee){
   if(assignee.simb->array == FALSO){
     GeraQuadrupla(OPATRIB, assignee.opnd, opndidle, assigner.opnd);
   }else{
-    GeraQuadrupla(OPATRIBP, assignee.pointer.opnd, opndidle, assigner.opnd);
+    GeraQuadrupla(OPATRIBP, assigner.opnd, opndidle, assignee.pointer.opnd);
   }
 }
 
@@ -1602,9 +1621,10 @@ quadrupla GeraQuadruplaJump(quadrupla destino) {
   return GeraQuadrupla(OPJUMP, opndidle, opndidle, opndaux);
 }
 
-quadrupla GeraQuadruplaRead(int params)
-{
+quadrupla GeraQuadruplaRead(int params){
   operando opnd1;
+
+  if(params == 0) return NULL;
 
   opnd1.tipo = INTOPND;
   opnd1.atr.valint = params;
@@ -1622,9 +1642,6 @@ quadrupla GeraQuadruplaWrite(int params)
   return GeraQuadrupla(OPWRITE, opnd1, opndidle, opndidle);
 }
 
-quadrupla GeraQuadruplaParam(operando opnd)
-{
+quadrupla GeraQuadruplaParam(operando opnd){
   return GeraQuadrupla(PARAM, opnd, opndidle, opndidle);
 }
-
-
