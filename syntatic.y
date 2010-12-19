@@ -1544,7 +1544,7 @@ void RenumQuadruplas(quadrupla quad1, quadrupla quad2){
   }
 }
 
-infoexpressao IntFactor  (int value)
+infoexpressao IntFactor(int value)
 {
   infoexpressao infoexpr;
 
@@ -1846,7 +1846,7 @@ void ExecQuadAtrib(quadrupla quad) {
   int tipo1, valint1;
   float valfloat1;
   char valchar1, vallogic1;
-  switch (quad->opnd1.tipo) {
+  switch(quad->opnd1.tipo) {
     case INTOPND:
       tipo1 = INTOPND;
       valint1 = quad->opnd1.atr.valint; break;
@@ -1877,14 +1877,14 @@ void ExecQuadAtrib(quadrupla quad) {
       }
       break;
   }
-  switch (quad->result.atr.simb->tvar) {
+  switch(quad->result.atr.simb->tvar) {
     case INTEIRO:
       if (tipo1 == INTOPND)  *(quad->result.atr.simb->valint) = valint1;
-      if (tipo1 == CHAROPND)*(quad->result.atr.simb->valint)=valchar1;
+      if (tipo1 == CHAROPND) *(quad->result.atr.simb->valint) = valchar1;
       break;
     case CARACTERE:
-      if (tipo1 == INTOPND) *(quad->result.atr.simb->valchar) = valint1;
-      if (tipo1==CHAROPND)*(quad->result.atr.simb->valchar)=valchar1;
+      if (tipo1 == INTOPND)  *(quad->result.atr.simb->valchar) = valint1;
+      if (tipo1 == CHAROPND) *(quad->result.atr.simb->valchar) = valchar1;
       break;
     case LOGICO:  *(quad->result.atr.simb->vallogic) = vallogic1; break;
     case REAL:
@@ -1896,6 +1896,7 @@ void ExecQuadAtrib(quadrupla quad) {
         *(quad->result.atr.simb->valfloat) = valchar1;
       break;
   }
+  printf("ATRIBUTED: %d", valint1);
 }
 
 void ExecQuadLT(quadrupla quad) {
@@ -1956,24 +1957,24 @@ void ExecQuadLT(quadrupla quad) {
 void ExecQuadRead(quadrupla quad) {
   // int i;  operando opndaux;  pilhaoperando pilhaopndaux;
   // 
-  // printf ("\n\t\tLendo: \n");
-  // InicPilhaOpnd (&pilhaopndaux);
+  // printf ("\n    Lendo: \n");
+  // InicPilhaOpnd(&pilhaopndaux);
   // for (i = 1; i <= quad->opnd1.atr.valint; i++) {
-  //   EmpilharOpnd (TopoOpnd (pilhaopnd), &pilhaopndaux);
-  //   DesempilharOpnd (&pilhaopnd);
+  //   EmpilharOpnd(TopoOpnd (pilhaopnd), &pilhaopndaux);
+  //   DesempilharOpnd(&pilhaopnd);
   // }
   // for (i = 1; i <= quad->opnd1.atr.valint; i++) {
   //   opndaux = TopoOpnd (pilhaopndaux);
   //   DesempilharOpnd (&pilhaopndaux);
   //       switch (opndaux.atr.simb->tvar) {
   //         case INTEIRO:
-  //             fscanf (finput, "%d", opndaux.atr.simb->valint); break;
+  //             fscanf(finput, "%d", opndaux.atr.simb->valint); break;
   //            case REAL:
-  //             fscanf (finput, "%g", opndaux.atr.simb->valfloat);break;
+  //             fscanf(finput, "%g", opndaux.atr.simb->valfloat);break;
   //           case LOGICO:
-  //             fscanf (finput, "%d", opndaux.atr.simb->vallogic); break;
+  //             fscanf(finput, "%d", opndaux.atr.simb->vallogic); break;
   //           case CARACTERE:
-  //             fscanf (finput, "%c", opndaux.atr.simb->valchar); break;
+  //             fscanf(finput, "%c", opndaux.atr.simb->valchar); break;
   //       }
   // }
 }
@@ -1986,8 +1987,7 @@ void InterpCodIntermed(){
   encerra = FALSO;
   quad = codintermed->prox->listquad->prox;
   while(!encerra){
-    printf ("\n%4d) %s", quad->num,
-    nomeoperquad[quad->oper]);
+    printf ("\n%4d) %s", quad->num, nomeoperquad[quad->oper]);
     quadprox = quad->prox;
     switch(quad->oper){
       case OPEXIT:  encerra = VERDADE;                     break;
@@ -1999,5 +1999,5 @@ void InterpCodIntermed(){
     }
     if(!encerra) quad = quadprox;
   }
-  printf ("\n");
+  printf("\n");
 }
