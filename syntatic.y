@@ -207,7 +207,11 @@ typedef struct infoexpressao infoexpressao;
 struct infoexpressao { int tipo;  operando opnd; };
 
 typedef struct infovariavel infovariavel;
-struct infovariavel { simbolo simb; operando opnd; };
+struct infovariavel {
+  simbolo simb;
+  operando opnd;
+  infoexpressao pointer;
+};
 
 /* Variaveis globais para a tabela de simbolos e analise semantica */
 simbolo tabsimb[NCLASSHASH];
@@ -1264,8 +1268,16 @@ infovariavel CheckVariable(simbolo simb, int index){
     if(index == 0){
       SubscritoEsperado();
     }else{
-      if(simb->ndims != index)
+      if(simb->ndims != index){
         NumeroDeSubscritoIncompativel();
+      }else{
+        infoexpr.opnd.tipo = VAROPND;
+        infoexpr.opnd.atr.simb = simb;
+        infoexpr.pointer.tipo          = simb->tvar;
+        infoexpr.pointer.opnd.tipo     = VAROPND;
+        infoexpr.pointer.opnd.atr.simb = NovaTemp(infoexpr.pointer.tipo);
+        GeraQuadrupla(OPINDEX, infoexpr.opnd, IntFactor(index).opnd, infoexpr.pointer.opnd);
+      }
     }
   }
 
@@ -1548,6 +1560,17 @@ infoexpressao VariableFactor(infovariavel infovar){
   infoexpressao infoexpr;
 
   infoexpr.opnd = infovar.opnd;
+
+  if(infovar.simb == NULL) return infoexpr;
+
+  if(infovar.simb->array == FALSO){
+    infoexpr.tipo = infovar.simb->tvar;
+  }else{
+    infoexpr.tipo = infovar.simb->tvar;
+    infoexpr.opnd.tipo = VAROPND;
+    infoexpr.opnd.atr.simb = NovaTemp(infoexpr.tipo);
+    GeraQuadrupla(OPCONTAP, infovar.pointer.opnd, opndidle, infoexpr.opnd);
+  }
 
   if (infovar.simb != NULL) {
     infoexpr.tipo = infovar.simb->tvar;
