@@ -1338,7 +1338,7 @@ int GeraQuadruplaParamRead(infovariavel infovar, int stack_size){
 
 void AssignVariable(infoexpressao assigner, infovariavel assignee){
   if(assignee.simb->array == FALSO){
-    GeraQuadrupla(OPATRIB, assignee.opnd, opndidle, assigner.opnd);
+    GeraQuadrupla(OPATRIB, assigner.opnd, opndidle, assignee.opnd);
   }else{
     GeraQuadrupla(OPATRIBP, assigner.opnd, opndidle, assignee.pointer.opnd);
   }

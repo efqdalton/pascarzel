@@ -10,6 +10,6 @@ main
     c := 30;
     arr[0, 2*1] := 1 + 2;
     brr[0     ] := arr[0, 2]+3.14;
-    write("a: ", a);
+    write("a: ", a, "arr: ", arr[0,2]);
     read(a, b, arr[0, 0], c);
   }
