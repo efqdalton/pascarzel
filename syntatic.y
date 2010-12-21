@@ -2652,6 +2652,16 @@ void InterpCodIntermed(){
       case OPNOT:   ExecQuadNot(quad);                     break;
       case OPEQ:    ExecQuadEQ(quad);                      break;
       case OPNE:    ExecQuadNE(quad);                      break;
+      // *JUMP
+      // *JF
+      // *IND
+      // *INDEX
+      // *CONTAP
+      // *ATRIBP
+      // *READ
+      // *CALL
+      // *RETURN
+      // NOP DONE!
     }
     if(!encerra) quad = quadprox;
   }
