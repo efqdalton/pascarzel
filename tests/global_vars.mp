@@ -12,7 +12,6 @@ function sayHello : void
 main
   statements {
     call sayHello();
-    vetor := 2;
     a := 2;
     write(a);
     vetor[0] := 1;
