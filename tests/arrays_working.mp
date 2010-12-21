@@ -5,7 +5,7 @@ main
     brr     : array [10] of float;
   }
   statements {
-    a := 10;
+    a := ~10;
     b := (20 / a) * 5;
     c := (30 - b) % 3;
     arr[0, 2*1] := 1 + 2;

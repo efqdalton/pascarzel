@@ -1910,6 +1910,45 @@ void ExecQuadMenos(quadrupla quad){
   }
 }
 
+void ExecQuadMenum(quadrupla quad){
+  int tipo1, valint1;
+  float valfloat1;
+  switch (quad->opnd1.tipo) {
+    case INTOPND:
+      tipo1 = INTOPND;  valint1 = quad->opnd1.atr.valint;  break;
+    case REALOPND:
+      tipo1 = REALOPND;  valfloat1 = quad->opnd1.atr.valfloat; break;
+    case CHAROPND:
+      tipo1 = INTOPND;  valint1 = quad->opnd1.atr.valchar;  break;
+    case VAROPND:
+      switch (quad->opnd1.atr.simb->tvar) {
+        case INTEIRO:
+          tipo1 = INTOPND;
+          valint1 = *(quad->opnd1.atr.simb->valint);  break;
+        case REAL:
+          tipo1 = REALOPND;
+          valfloat1=*(quad->opnd1.atr.simb->valfloat);break;
+        case CARACTERE:
+          tipo1 = INTOPND;
+          valint1 = *(quad->opnd1.atr.simb->valchar); break;
+      }
+      break;
+  }
+
+  switch (quad->result.atr.simb->tvar) {
+    case CARACTERE:
+    case INTEIRO:
+      *(quad->result.atr.simb->valint) = - valint1;
+      break;
+    case REAL:
+      if (tipo1 == INTOPND)
+        *(quad->result.atr.simb->valfloat) = - valint1;
+      if (tipo1 == REALOPND)
+        *(quad->result.atr.simb->valfloat) = - valfloat1;
+      break;
+  }
+}
+
 void ExecQuadMult(quadrupla quad){
   int tipo1, tipo2, valint1, valint2;
   float valfloat1, valfloat2;
@@ -2232,6 +2271,7 @@ void InterpCodIntermed(){
       case OPWRITE: ExecQuadWrite(quad);                   break;
       case OPMAIS:  ExecQuadMais(quad);                    break;
       case OPMENOS: ExecQuadMenos(quad);                   break;
+      case OPMENUN: ExecQuadMenum(quad);                   break;
       case OPMULT:  ExecQuadMult(quad);                    break;
       case OPDIV:   ExecQuadDiv(quad);                     break;
       case OPRESTO: ExecQuadResto(quad);                   break;
