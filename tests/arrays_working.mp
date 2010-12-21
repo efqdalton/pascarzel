@@ -10,6 +10,7 @@ main
     c := (30 - b) % 3;
     arr[0, 2*1] := 1 + 2;
     brr[0     ] := arr[0, 2]-3.14;
-    write("a: ", a, "c: ", c, "arr: ", arr[0,2]);
+    write("a: ", a, "c: ", c, "arr: ", arr[0,2], "true: ", 10 > 2, 2 < 10, 2 <= 2, 2 >= 2, "false: ", 10 < 2, 2 > 10, 2 <= 1, 1 >= 2);
+    write(true && true, true && false, true || false, false || false);
     read(a, b, arr[0, 0], c);
   }
