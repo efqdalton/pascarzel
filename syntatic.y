@@ -342,6 +342,9 @@ void InterpCodIntermed();
 void ExecQuadWrite(quadrupla);
 void ExecQuadMais(quadrupla);
 void ExecQuadMenos(quadrupla);
+void ExecQuadMult(quadrupla);
+void ExecQuadDiv(quadrupla);
+void ExecQuadResto(quadrupla);
 void ExecQuadAtrib(quadrupla);
 void ExecQuadLT(quadrupla);
 void ExecQuadRead(quadrupla);
@@ -1827,6 +1830,7 @@ void ExecQuadMais(quadrupla quad){
       break;
   }
   switch (quad->result.atr.simb->tvar) {
+    case CARACTERE:
     case INTEIRO:
       *(quad->result.atr.simb->valint) = valint1 + valint2;
       break;
@@ -1889,6 +1893,7 @@ void ExecQuadMenos(quadrupla quad){
       break;
   }
   switch (quad->result.atr.simb->tvar) {
+    case CARACTERE:
     case INTEIRO:
       *(quad->result.atr.simb->valint) = valint1 - valint2;
       break;
@@ -1951,6 +1956,7 @@ void ExecQuadMult(quadrupla quad){
       break;
   }
   switch (quad->result.atr.simb->tvar) {
+    case CARACTERE:
     case INTEIRO:
       *(quad->result.atr.simb->valint) = valint1 * valint2;
       break;
@@ -2013,6 +2019,7 @@ void ExecQuadDiv(quadrupla quad){
       break;
   }
   switch (quad->result.atr.simb->tvar) {
+    case CARACTERE:
     case INTEIRO:
       *(quad->result.atr.simb->valint) = valint1 / valint2;
       break;
@@ -2025,6 +2032,48 @@ void ExecQuadDiv(quadrupla quad){
         *(quad->result.atr.simb->valfloat) = valfloat1 / valint2;
       if (tipo1 == REALOPND && tipo2 == REALOPND)
         *(quad->result.atr.simb->valfloat) = valfloat1 / valfloat2;
+      break;
+  }
+}
+
+void ExecQuadResto(quadrupla quad){
+  int tipo1, tipo2, valint1, valint2;
+  switch (quad->opnd1.tipo) {
+    case INTOPND:
+      tipo1 = INTOPND;  valint1 = quad->opnd1.atr.valint;  break;
+    case CHAROPND:
+      tipo1 = INTOPND;  valint1 = quad->opnd1.atr.valchar;  break;
+    case VAROPND:
+      switch (quad->opnd1.atr.simb->tvar) {
+        case INTEIRO:
+          tipo1 = INTOPND;
+          valint1 = *(quad->opnd1.atr.simb->valint);  break;
+        case CARACTERE:
+          tipo1 = INTOPND;
+          valint1 = *(quad->opnd1.atr.simb->valchar); break;
+      }
+      break;
+  }
+  switch (quad->opnd2.tipo) {
+    case INTOPND:
+      tipo2 = INTOPND;  valint2 = quad->opnd2.atr.valint;  break;
+    case CHAROPND:
+      tipo2 = INTOPND;  valint2 = quad->opnd2.atr.valchar;  break;
+    case VAROPND:
+      switch (quad->opnd2.atr.simb->tvar) {
+        case INTEIRO:
+          tipo2 = INTOPND;
+          valint2 = *(quad->opnd2.atr.simb->valint);  break;
+        case CARACTERE:
+          tipo2 = INTOPND;
+          valint2=*(quad->opnd2.atr.simb->valchar);break;
+      }
+      break;
+  }
+  switch (quad->result.atr.simb->tvar) {
+    case CARACTERE:
+    case INTEIRO:
+      *(quad->result.atr.simb->valint) = valint1 % valint2;
       break;
   }
 }
@@ -2185,6 +2234,7 @@ void InterpCodIntermed(){
       case OPMENOS: ExecQuadMenos(quad);                   break;
       case OPMULT:  ExecQuadMult(quad);                    break;
       case OPDIV:   ExecQuadDiv(quad);                     break;
+      case OPRESTO: ExecQuadResto(quad);                   break;
       case OPATRIB: ExecQuadAtrib(quad);                   break;
     }
     if(!encerra) quad = quadprox;

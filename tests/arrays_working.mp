@@ -7,7 +7,7 @@ main
   statements {
     a := 10;
     b := (20 / a) * 5;
-    c := 30 - b;
+    c := (30 - b) % 3;
     arr[0, 2*1] := 1 + 2;
     brr[0     ] := arr[0, 2]-3.14;
     write("a: ", a, "c: ", c, "arr: ", arr[0,2]);
