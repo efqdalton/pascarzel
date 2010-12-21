@@ -2623,7 +2623,7 @@ void ExecQuadRead(quadrupla quad) {
 
 void InterpCodIntermed(){
   quadrupla quad, quadprox;
-  char encerra;
+  char encerra, condicao;
   printf("\n\nINTERPRETADOR:\n");
   InicPilhaOpnd(&pilhaopnd);
   encerra = FALSO;
@@ -2652,8 +2652,12 @@ void InterpCodIntermed(){
       case OPNOT:   ExecQuadNot(quad);                     break;
       case OPEQ:    ExecQuadEQ(quad);                      break;
       case OPNE:    ExecQuadNE(quad);                      break;
-      // *JUMP
-      // *JF
+      case OPJUMP:  quadprox = quad->result.atr.rotulo;    break;
+      case OPJF:
+        if(quad->opnd1.tipo == LOGICOPND) condicao = quad->opnd1.atr.vallogic;
+        if(quad->opnd1.tipo == VAROPND)   condicao = *(quad->opnd1.atr.simb->vallogic);
+        if(!condicao) quadprox = quad->result.atr.rotulo;
+        break;
       // *IND
       // *INDEX
       // *CONTAP
