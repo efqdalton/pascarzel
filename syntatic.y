@@ -2634,11 +2634,11 @@ void ExecQuadRead(quadrupla quad) {
           case INTEIRO:
               fscanf(finput, "%d", opndaux.atr.simb->valint); printf("readed: %d\n", *opndaux.atr.simb->valint); break;
              case REAL:
-              fscanf(finput, "%g", opndaux.atr.simb->valfloat); break;
+              fscanf(finput, "%g", opndaux.atr.simb->valfloat); printf("readed: %g\n", *opndaux.atr.simb->valfloat); break;
             case LOGICO:
-              fscanf(finput, "%d", opndaux.atr.simb->vallogic); break;
+              fscanf(finput, "%d", opndaux.atr.simb->vallogic); printf("readed: %d\n", *opndaux.atr.simb->vallogic); break;
             case CARACTERE:
-              fscanf(finput, "%c", opndaux.atr.simb->valchar); break;
+              fscanf(finput, "%c", opndaux.atr.simb->valchar); printf("readed: %c\n", *opndaux.atr.simb->valchar); break;
         }
   }
 }
@@ -2691,9 +2691,6 @@ void InterpCodIntermed(){
       case OPINDEX:  ExecQuadIndex(quad);                   break;
       case OPATRIBP:
       case OPCONTAP: ExecQuadAtrib(quad);                   break;
-      // *CONTAP
-      // *ATRIBP
-      // *READ
       // *CALL
       // *RETURN
       // NOP DONE!
