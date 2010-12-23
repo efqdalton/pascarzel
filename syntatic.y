@@ -327,6 +327,7 @@ struct nohopnd{
 };
 typedef nohopnd *pilhaoperando;
 pilhaoperando pilhaopnd, pilhaopndaux, pilhaind;
+FILE *finput;
 
 // Protótipos para helpers de Interpretador
 
@@ -2617,29 +2618,29 @@ void ExecQuadIndex(quadrupla quad){
 }
 
 void ExecQuadRead(quadrupla quad) {
-  // int i;  operando opndaux;
-  // pilhaoperando pilhaopndaux;
-  // 
-  // printf("\n    Lendo: \n");
-  // InicPilhaOpnd(&pilhaopndaux);
-  // for (i = 1; i <= quad->opnd1.atr.valint; i++) {
-  //   EmpilharOpnd(TopoOpnd (pilhaopnd), &pilhaopndaux);
-  //   DesempilharOpnd(&pilhaopnd);
-  // }
-  // for (i = 1; i <= quad->opnd1.atr.valint; i++) {
-  //   opndaux = TopoOpnd(pilhaopndaux);
-  //   DesempilharOpnd (&pilhaopndaux);
-  //       switch (opndaux.atr.simb->tvar) {
-  //         case INTEIRO:
-  //             fscanf(finput, "%d", opndaux.atr.simb->valint); break;
-  //            case REAL:
-  //             fscanf(finput, "%g", opndaux.atr.simb->valfloat); break;
-  //           case LOGICO:
-  //             fscanf(finput, "%d", opndaux.atr.simb->vallogic); break;
-  //           case CARACTERE:
-  //             fscanf(finput, "%c", opndaux.atr.simb->valchar); break;
-  //       }
-  // }
+  int i;  operando opndaux;
+  pilhaoperando pilhaopndaux;
+  
+  printf("\n    Lendo: \n");
+  InicPilhaOpnd(&pilhaopndaux);
+  for (i = 1; i <= quad->opnd1.atr.valint; i++) {
+    EmpilharOpnd(TopoOpnd (pilhaopnd), &pilhaopndaux);
+    DesempilharOpnd(&pilhaopnd);
+  }
+  for (i = 1; i <= quad->opnd1.atr.valint; i++) {
+    opndaux = TopoOpnd(pilhaopndaux);
+    DesempilharOpnd (&pilhaopndaux);
+        switch (opndaux.atr.simb->tvar) {
+          case INTEIRO:
+              fscanf(finput, "%d", opndaux.atr.simb->valint); printf("readed: %d\n", *opndaux.atr.simb->valint); break;
+             case REAL:
+              fscanf(finput, "%g", opndaux.atr.simb->valfloat); break;
+            case LOGICO:
+              fscanf(finput, "%d", opndaux.atr.simb->vallogic); break;
+            case CARACTERE:
+              fscanf(finput, "%c", opndaux.atr.simb->valchar); break;
+        }
+  }
 }
 
 void InterpCodIntermed(){
@@ -2647,6 +2648,7 @@ void InterpCodIntermed(){
   funchead functions;
   char encerra, condicao;
   printf("\n\nINTERPRETADOR:\n");
+  finput = fopen("input.txt", "r");
   InicPilhaOpnd(&pilhaopnd);
   InicPilhaOpnd(&pilhaind);
   encerra = FALSO;
@@ -2660,6 +2662,7 @@ void InterpCodIntermed(){
       quadprox = functions->listquad->prox; break;
       case OPEXIT:   encerra = VERDADE;                     break;
       case OPENMOD:  AlocaVariaveis();                      break;
+      case OPREAD:   ExecQuadRead (quad);                   break;
       case PARAM:    EmpilharOpnd(quad->opnd1, &pilhaopnd); break;
       case OPWRITE:  ExecQuadWrite(quad);                   break;
       case OPMAIS:   ExecQuadMais(quad);                    break;
@@ -2697,5 +2700,6 @@ void InterpCodIntermed(){
     }
     if(!encerra) quad = quadprox;
   }
+  fclose(finput);
   printf("\n");
 }

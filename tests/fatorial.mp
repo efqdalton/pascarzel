@@ -19,8 +19,7 @@ function fatorial : int
 
 main
   local {
-    n : int;
-    c : char;
+    n, c : int;
   }
   statements {
     continue := true;
@@ -30,7 +29,7 @@ main
       write("Fatorial de ", n, " eh ", fatorial(n), "\n\n");
       write("Deseja calcular outro fatorial?(s/n)\n");
       read(c);
-      if c = 'n' then
+      if c = 0 then
         continue := false;
     }
   }
