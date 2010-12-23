@@ -2597,42 +2597,23 @@ void ExecQuadNE(quadrupla quad) {
 }
 
 void ExecQuadIndex(quadrupla quad){
-  int i, pointer_value = 0;
+  int i, pointer_value = 0, weight = 1;
   operando opndaux;
-  pilhaoperando pilhaopndaux;
   
   printf("\n  Indexando:\n    ");
-  InicPilhaOpnd(&pilhaopndaux);
-  for(i = 1; i <= quad->opnd2.atr.valint; i++) {
-    EmpilharOpnd(TopoOpnd(pilhaind), &pilhaopndaux);
+  for(i = quad->opnd2.atr.valint-1; i > 0; i--){
+    opndaux = TopoOpnd(pilhaind);
+    if(opndaux.tipo == INTOPND) pointer_value += opndaux.atr.valint*weight;
+    else pointer_value += (*(opndaux.atr.simb->valint))*weight;
     DesempilharOpnd(&pilhaind);
+    weight *= quad->opnd1.atr.simb->dims[i];
   }
-  for(i = 1; i <= quad->opnd2.atr.valint; i++){
-    opndaux = TopoOpnd(pilhaopndaux);
-    DesempilharOpnd(&pilhaopndaux);
-    switch(opndaux.tipo){
-      case INTOPND:     printf("%d", opndaux.atr.valint);             break;
-      case REALOPND:    printf("%g", opndaux.atr.valfloat);           break;
-      case CHAROPND:    printf("%c", opndaux.atr.valchar);            break;
-      case LOGICOPND:
-        if(opndaux.atr.vallogic == 1) printf("TRUE");
-        else printf("FALSE");
-        break;
-      case CADOPND:     printf("%s", opndaux.atr.valcad);             break;
-      case VAROPND:
-        switch(opndaux.atr.simb->tvar){
-          case INTEIRO: printf("%d", *(opndaux.atr.simb->valint));    break;
-          case REAL:    printf("%g", *(opndaux.atr.simb->valfloat));  break;
-          case LOGICO:
-            if(*(opndaux.atr.simb->vallogic) == 1) printf("TRUE");
-            else printf("FALSE");
-            break;
-          case CARACTERE: printf("%c", *(opndaux.atr.simb->valchar)); break;
-        }
-        break;
-    }
+  switch(quad->opnd1.atr.simb->tvar){
+    case INTEIRO:   quad->result.atr.simb->valint = quad->opnd1.atr.simb->valint + pointer_value;     break;
+    case REAL:      quad->result.atr.simb->valfloat = quad->opnd1.atr.simb->valfloat + pointer_value; break;
+    case LOGICO:    quad->result.atr.simb->vallogic = quad->opnd1.atr.simb->vallogic + pointer_value; break;
+    case CARACTERE: quad->result.atr.simb->valchar = quad->opnd1.atr.simb->valchar + pointer_value;   break;
   }
-  printf("\n");
 }
 
 void ExecQuadRead(quadrupla quad) {
@@ -2674,34 +2655,36 @@ void InterpCodIntermed(){
       quadprox = quad->prox;
       switch(quad->oper){
         case OPRETURN: //Gambi feia!
-        case OPEXIT:  encerra = VERDADE;                     break;
-        case OPENMOD: AlocaVariaveis();                      break;
-        case PARAM:   EmpilharOpnd(quad->opnd1, &pilhaopnd); break;
-        case OPWRITE: ExecQuadWrite(quad);                   break;
-        case OPMAIS:  ExecQuadMais(quad);                    break;
-        case OPMENOS: ExecQuadMenos(quad);                   break;
-        case OPMENUN: ExecQuadMenum(quad);                   break;
-        case OPMULT:  ExecQuadMult(quad);                    break;
-        case OPDIV:   ExecQuadDiv(quad);                     break;
-        case OPRESTO: ExecQuadResto(quad);                   break;
-        case OPATRIB: ExecQuadAtrib(quad);                   break;
-        case OPLT:    ExecQuadLT(quad);                      break;
-        case OPLE:    ExecQuadLE(quad);                      break;
-        case OPGT:    ExecQuadGT(quad);                      break;
-        case OPGE:    ExecQuadGE(quad);                      break;
-        case OPAND:   ExecQuadAnd(quad);                     break;
-        case OPOR:    ExecQuadOr(quad);                      break;
-        case OPNOT:   ExecQuadNot(quad);                     break;
-        case OPEQ:    ExecQuadEQ(quad);                      break;
-        case OPNE:    ExecQuadNE(quad);                      break;
-        case OPJUMP:  quadprox = quad->result.atr.rotulo;    break;
+        case OPEXIT:   encerra = VERDADE;                     break;
+        case OPENMOD:  AlocaVariaveis();                      break;
+        case PARAM:    EmpilharOpnd(quad->opnd1, &pilhaopnd); break;
+        case OPWRITE:  ExecQuadWrite(quad);                   break;
+        case OPMAIS:   ExecQuadMais(quad);                    break;
+        case OPMENOS:  ExecQuadMenos(quad);                   break;
+        case OPMENUN:  ExecQuadMenum(quad);                   break;
+        case OPMULT:   ExecQuadMult(quad);                    break;
+        case OPDIV:    ExecQuadDiv(quad);                     break;
+        case OPRESTO:  ExecQuadResto(quad);                   break;
+        case OPATRIB:  ExecQuadAtrib(quad);                   break;
+        case OPLT:     ExecQuadLT(quad);                      break;
+        case OPLE:     ExecQuadLE(quad);                      break;
+        case OPGT:     ExecQuadGT(quad);                      break;
+        case OPGE:     ExecQuadGE(quad);                      break;
+        case OPAND:    ExecQuadAnd(quad);                     break;
+        case OPOR:     ExecQuadOr(quad);                      break;
+        case OPNOT:    ExecQuadNot(quad);                     break;
+        case OPEQ:     ExecQuadEQ(quad);                      break;
+        case OPNE:     ExecQuadNE(quad);                      break;
+        case OPJUMP:   quadprox = quad->result.atr.rotulo;    break;
         case OPJF:
           if(quad->opnd1.tipo == LOGICOPND) condicao = quad->opnd1.atr.vallogic;
           if(quad->opnd1.tipo == VAROPND)   condicao = *(quad->opnd1.atr.simb->vallogic);
           if(!condicao) quadprox = quad->result.atr.rotulo;
           break;
-        case OPIND:   EmpilharOpnd(quad->opnd1, &pilhaind);  break;
-        case OPINDEX: ExecQuadIndex(quad);                   break;
+        case OPIND:    EmpilharOpnd(quad->opnd1, &pilhaind);  break;
+        case OPINDEX:  ExecQuadIndex(quad);                   break;
+        case OPATRIBP:
+        case OPCONTAP: ExecQuadAtrib(quad);                   break;
         // *CONTAP
         // *ATRIBP
         // *READ
